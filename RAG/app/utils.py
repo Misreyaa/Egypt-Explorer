@@ -2,6 +2,16 @@ import re
 from typing import List
 from sentence_transformers import SentenceTransformer
 
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
 
 def load_embedding_model(model_name: str) -> SentenceTransformer:
     """Load and return the embedding model."""
