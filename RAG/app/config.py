@@ -21,8 +21,9 @@ class Settings(BaseSettings):
     groq_api_key: Optional[str] = os.getenv("GROQ_API_KEY")
     groq_model: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
     
-    # Data paths
-    excel_file_path: str = os.getenv("EXCEL_FILE_PATH", "data/Categorized_Locations.xlsx")
+    # MongoDB settings (source of truth for places)
+    mongodb_uri: str = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+    mongodb_db: str = os.getenv("MONGODB_DB", "egyreal")
     
     # RAG settings
     top_k: int = int(os.getenv("TOP_K", "5"))
