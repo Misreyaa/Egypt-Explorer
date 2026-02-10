@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.models import QueryRequest, QueryResponse
 from app.retrieval import retrieve
-from app.generation import build_context
+from app.generation import build_context, generate
 from app.routes import destinations, tourists, locals, posts, shops, vehicles
 from app.auth import create_access_token, get_current_user  # get_current_user verifies JWT
 
@@ -14,6 +14,11 @@ app = FastAPI(
     description="API for destinations, tourists, locals, posts, shops, and vehicles",
     version="1.0.0"
 )
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 # -----------------------------
 # Token Endpoint for Login
@@ -54,8 +59,11 @@ def query_rag(req: QueryRequest, current_user: str = Depends(get_current_user)):
 
     context = build_context(results)
 
-    # 🔥 LLM CALL GOES HERE
-    answer = f"ANSWER BASED ON:\n{context}"
+    # LLM generation (Groq). If GROQ_API_KEY isn't set, fall back to returning context.
+    try:
+        answer = generate(req.query, context)
+    except ValueError:
+        answer = f"ANSWER BASED ON:\n{context}"
 
     sources = [
         {

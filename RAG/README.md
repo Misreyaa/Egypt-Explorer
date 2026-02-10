@@ -1,224 +1,183 @@
-# RAG Application
+# Egypt Tourism RAG API (EGYReal)
 
-Retrieval-Augmented Generation (RAG) application using Excel data, Qdrant vector database, and OpenAI.
+Backend API for an Egypt tourism assistant that combines:
 
-## Architecture
+- **RAG search** over an Excel dataset stored in **Qdrant** (vector DB)
+- **LLM answers** via **Groq** (optional, enabled by `GROQ_API_KEY`)
+- **CRUD APIs** for destinations / tourists / locals / posts / shops / vehicles in **MongoDB**
+- **JWT auth** to protect the RAG query endpoint
+
+## Repo structure
 
 ```
-rag_app/
-├── app/
-│   ├── main.py              # FastAPI entrypoint
-│   ├── config.py            # Environment variables + constants
-│   ├── models.py            # Pydantic schemas
-│   ├── ingestion.py         # Excel → embeddings → Qdrant
-│   ├── retrieval.py         # Semantic search + filters
-│   ├── generation.py        # LLM prompt + response
-│   └── utils.py             # Utility functions
-├── data/
-│   └── Categorized_Locations.xlsx
-├── requirements.txt
-└── README.md
+RAG/
+├─ app/
+│  ├─ ingestion.py        # Excel → embeddings → Qdrant
+│  ├─ retrieval.py        # Qdrant semantic search (+ wheelchair filter)
+│  ├─ generation.py       # Groq LLM generation (optional)
+│  ├─ config.py           # Settings/env vars
+│  ├─ db.py               # Mongo connection + collections
+│  ├─ auth.py             # JWT helpers + auth dependency
+│  ├─ models.py           # Pydantic schemas
+│  └─ routes/             # CRUD routers (destinations/tourists/locals/posts/shops/vehicles)
+├─ data/
+│  └─ Categorized_Locations.xlsx
+├─ main.py                # Main FastAPI app (routers + /token + /query + /health)
+├─ requirements.txt
+└─ README.md
 ```
 
-## Setup
+## Data used (`data/Categorized_Locations.xlsx`)
 
-### 1. Install Dependencies
+This project uses an Excel file containing Egyptian locations/destinations. During ingestion (`app/ingestion.py`):
+
+- Column names are normalized: **lowercased** and spaces replaced with underscores.
+- Each row becomes one “place”, identified by `place_id` and `name`.
+- Two text fields are embedded (if present) and stored in Qdrant as separate points:
+  - `short_description` → stored with `field_type="description"`
+  - `what_makes_it_special` → stored with `field_type="significance"`
+
+**Minimum columns expected by ingestion**
+
+- `place_id`
+- `name`
+
+**Optional columns used as metadata payload in Qdrant**
+
+- `category`
+- `accessibility`
+- `short_description`
+- `what_makes_it_special`
+
+If you add more columns and want them searchable, extend the `chunks` list in `app/ingestion.py`.
+
+## Setup (local development)
+
+### 1) Install Python dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Environment Variables
-
-Create a `.env` file or set the following environment variables:
+### 2) Start Qdrant (Docker)
 
 ```bash
-# Qdrant Configuration
+docker run -p 6333:6333 -v qdrant_storage:/qdrant/storage qdrant/qdrant:latest
+```
+
+Qdrant will be available at `http://localhost:6333` (dashboard at `/dashboard`).
+
+### 3) Start MongoDB (choose one)
+
+**Option A: local MongoDB with Docker**
+
+```bash
+docker run -p 27017:27017 -v mongo_data:/data/db mongo:7
+```
+
+**Option B: MongoDB Atlas**
+
+Set `MONGODB_URI` to your Atlas connection string.
+
+### 4) Environment variables
+
+You can set env vars in your shell or create a `.env` file (supported by `pydantic-settings`).
+
+**Required for Qdrant + ingestion**
+
+```bash
 QDRANT_URL=http://localhost:6333
-QDRANT_API_KEY=your_api_key_optional
-QDRANT_COLLECTION=rag_collection
-
-# OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4o-mini
-
-# Embedding Model
+QDRANT_COLLECTION=egypt_places
 EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
-
-# Data Path
-EXCEL_FILE_PATH=data/Categorized_Locations.xlsx
-
-# RAG Settings (optional)
-TOP_K=5
-CHUNK_SIZE=500
-CHUNK_OVERLAP=50
 ```
 
-### 3. Start Qdrant
-
-You can run Qdrant locally using Docker:
+**Required for Mongo-backed CRUD endpoints**
 
 ```bash
-docker run -p 6333:6333 qdrant/qdrant
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB=egyreal
 ```
 
-Or use Qdrant Cloud (update `QDRANT_URL` and `QDRANT_API_KEY` accordingly).
+**Optional (enable LLM answers via Groq)**
 
-### 4. Prepare Data
-
-Place your Excel file (`Categorized_Locations.xlsx`) in the `data/` directory.
-
-## Usage
-
-### Data Ingestion
-
-Ingest Excel data into Qdrant:
-
-**Option 1: Via API**
 ```bash
-curl -X POST http://localhost:8000/ingest
+GROQ_API_KEY=your_groq_key
+GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
-**Option 2: Via Python script**
+## Run the project
+
+### 1) Ingest the Excel file into Qdrant
+
 ```bash
-python -m app.ingestion
+python -c "from app.ingestion import ingest_excel; ingest_excel('data/Categorized_Locations.xlsx')"
 ```
 
-This will:
-- Load the Excel file
-- Convert rows to documents
-- Chunk documents (if needed)
-- Generate embeddings
-- Upload to Qdrant
+### 2) Start the API server
 
-### Running the API
+You can run either command (they point to the same FastAPI app):
 
-Start the FastAPI server:
+```bash
+uvicorn main:app --reload
+```
+
+or:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`
+Swagger UI will be at `http://127.0.0.1:8000/docs`.
 
-### Querying
+## API overview
 
-**Health Check:**
-```bash
-curl http://localhost:8000/health
-```
+### Health
 
-**RAG Query:**
-```bash
-curl -X POST http://localhost:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "What locations are available?",
-    "top_k": 5
-  }'
-```
+- `GET /health` → `{ "status": "ok" }`
 
-**Query with Filters:**
-```bash
-curl -X POST http://localhost:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "Find locations in a specific category",
-    "top_k": 5,
-    "filters": {
-      "Category": "Restaurants"
-    }
-  }'
-```
+### Auth
 
-## API Endpoints
+- `POST /token` (OAuth2 password flow; currently dummy user `admin/password`) → returns JWT
 
-### `GET /health`
-Health check endpoint.
+> Note: `app/auth.py` currently contains a placeholder `SECRET_KEY`. Set a strong secret before production.
 
-### `POST /ingest`
-Ingest Excel data into Qdrant vector database.
+### RAG
 
-**Response:**
+- `POST /query` (protected; requires `Authorization: Bearer <token>`)
+
+Request body (`app.models.QueryRequest`):
+
 ```json
-{
-  "status": "success",
-  "documents_processed": 100,
-  "collection_name": "rag_collection",
-  "message": "Successfully ingested 100 chunks into Qdrant"
-}
+{ "query": "string", "wheelchair_only": false }
 ```
 
-### `POST /query`
-Query the RAG system.
+Response (`app.models.QueryResponse`):
 
-**Request:**
 ```json
-{
-  "query": "Your question here",
-  "top_k": 5,
-  "filters": {
-    "column_name": "value"
-  }
-}
+{ "response": "string", "sources": [ { "place_id": "…", "field_type": "…" } ] }
 ```
 
-**Response:**
-```json
-{
-  "answer": "Generated answer based on context",
-  "sources": [
-    {
-      "id": "uuid",
-      "text": "Document text",
-      "metadata": {...},
-      "score": 0.95
-    }
-  ],
-  "query": "Your question here"
-}
-```
+Behavior:
 
-## Components
+- Retrieves top matches from Qdrant (`app/retrieval.py`)
+- Builds a context string (`app/generation.py: build_context`)
+- If `GROQ_API_KEY` is set, generates a final answer via Groq; otherwise returns a fallback answer based on context
 
-### `app/ingestion.py`
-- Loads Excel files using pandas
-- Converts rows to documents with metadata
-- Chunks documents (configurable)
-- Generates embeddings using sentence-transformers
-- Uploads to Qdrant vector database
+### CRUD routers (MongoDB)
 
-### `app/retrieval.py`
-- Semantic search using Qdrant
-- Supports filtering by metadata fields
-- Returns ranked documents with scores
+These are mounted under:
 
-### `app/generation.py`
-- Builds context from retrieved documents
-- Constructs RAG prompts
-- Generates answers using OpenAI API
-- Returns answers with source citations
+- `/destinations`
+- `/tourists`
+- `/locals`
+- `/posts`
+- `/shops`
+- `/vehicles`
 
-### `app/models.py`
-- Pydantic models for request/response validation
-- `QueryRequest`, `QueryResponse`, `Document`, `IngestionResponse`
+They use Pydantic models in `app/models.py` and store data in MongoDB collections defined in `app/db.py`.
 
-### `app/utils.py`
-- Text cleaning and normalization
-- Text chunking utilities
-- Embedding model loading
+## Notes / gotchas
 
-## Customization
-
-- **Chunking Strategy**: Modify `chunk_text()` in `app/utils.py`
-- **Prompt Engineering**: Update `build_prompt()` in `app/generation.py`
-- **Embedding Model**: Change `EMBEDDING_MODEL_NAME` in config
-- **LLM Model**: Change `OPENAI_MODEL` in config
-- **Filters**: Add custom filter logic in `app/retrieval.py`
-
-## Notes
-
-- Ensure Qdrant is running before ingesting data or querying
-- The Excel file should be placed in `data/` directory
-- First run ingestion before querying
-- Adjust `CHUNK_SIZE` and `CHUNK_OVERLAP` based on your data characteristics
+- **Ingestion must run before meaningful RAG queries** (so Qdrant has vectors).
+- Qdrant point IDs must be UUID/uint — ingestion uses UUIDs.
+- Never commit secrets. Put credentials in env vars / `.env` (and add `.env` to `.gitignore`).

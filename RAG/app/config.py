@@ -17,9 +17,9 @@ class Settings(BaseSettings):
         "sentence-transformers/all-MiniLM-L6-v2"
     )
     
-    # LLM settings
-    openai_api_key: Optional[str] = os.getenv("OPENAI_API_KEY")
-    openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    # LLM settings (Groq)
+    groq_api_key: Optional[str] = os.getenv("GROQ_API_KEY")
+    groq_model: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
     
     # Data paths
     excel_file_path: str = os.getenv("EXCEL_FILE_PATH", "data/Categorized_Locations.xlsx")

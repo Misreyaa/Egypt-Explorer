@@ -1,13 +1,19 @@
+import os
 
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
+from motor.motor_asyncio import AsyncIOMotorClient
 
-uri = "mongodb+srv://mariamelkondakly88_db_user:VXNPTFlECyywG3F5@cluster0.byznfgr.mongodb.net/?appName=Cluster0"
+# NOTE:
+# - Do NOT hardcode credentials in source code.
+# - Provide your Mongo connection string via environment variables.
+#
+# Examples:
+#   MONGODB_URI=mongodb://localhost:27017
+#   MONGODB_DB=egyreal
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+MONGODB_DB = os.getenv("MONGODB_DB", "egyreal")
 
-# Create a new client and connect to the server
-client = MongoClient(uri, server_api=ServerApi('1'))
-
-db = client["egyreal"]
+client = AsyncIOMotorClient(MONGODB_URI)
+db = client[MONGODB_DB]
 
 # Collections
 destinations_collection = db["destinations"]
