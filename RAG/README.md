@@ -2,7 +2,7 @@
 
 Backend API for an Egypt tourism assistant that combines:
 
-- **RAG search** over an Excel dataset stored in **Qdrant** (vector DB)
+- **RAG search** over destination data stored in **MongoDB** and indexed as vectors in **Qdrant**
 - **LLM answers** via **Groq** (optional, enabled by `GROQ_API_KEY`)
 - **CRUD APIs** for destinations / tourists / locals / posts / shops / vehicles in **MongoDB**
 - **JWT auth** to protect the RAG query endpoint
@@ -12,7 +12,7 @@ Backend API for an Egypt tourism assistant that combines:
 ```
 RAG/
 ├─ app/
-│  ├─ ingestion.py        # Excel → embeddings → Qdrant
+│  ├─ ingestion.py        # MongoDB → embeddings → Qdrant
 │  ├─ retrieval.py        # Qdrant semantic search (+ wheelchair filter)
 │  ├─ generation.py       # Groq LLM generation (optional)
 │  ├─ config.py           # Settings/env vars
@@ -20,36 +20,60 @@ RAG/
 │  ├─ auth.py             # JWT helpers + auth dependency
 │  ├─ models.py           # Pydantic schemas
 │  └─ routes/             # CRUD routers (destinations/tourists/locals/posts/shops/vehicles)
-├─ data/
-│  └─ Categorized_Locations.xlsx
+├─ scripts/
+│  └─ load_excel_to_mongo.py  # optional one-time Excel → Mongo loader
 ├─ main.py                # Main FastAPI app (routers + /token + /query + /health)
 ├─ requirements.txt
 └─ README.md
 ```
 
-## Data used (`data/Categorized_Locations.xlsx`)
+## Data model (MongoDB → Qdrant)
 
-This project uses an Excel file containing Egyptian locations/destinations. During ingestion (`app/ingestion.py`):
+This project treats **MongoDB as the source of truth** for destinations/places, and uses **Qdrant only for vector search**.
 
-- Column names are normalized: **lowercased** and spaces replaced with underscores.
-- Each row becomes one “place”, identified by `place_id` and `name`.
-- Two text fields are embedded (if present) and stored in Qdrant as separate points:
-  - `short_description` → stored with `field_type="description"`
-  - `what_makes_it_special` → stored with `field_type="significance"`
+### MongoDB (source of truth)
 
-**Minimum columns expected by ingestion**
+- Collection: `destinations` (DB configured by `MONGODB_DB`)
+- Each document represents one place/destination and must have at least:
+  - `place_id` (string, unique)
+  - `name` (string)
 
-- `place_id`
-- `name`
+Common fields used by RAG (stored in Mongo and partially mirrored into Qdrant payloads):
 
-**Optional columns used as metadata payload in Qdrant**
+- Descriptive text used for RAG:
+  - `short_description`
+  - `historical_context`
+  - `what_makes_it_special`
+- Structured facts, kept in Mongo and **not embedded** (served directly):
+  - `opening_hours`
+  - `best_time_to_visit`
+  - `dress_code`
+  - `accessibility`
+  - `traffic_and_access`
+  - `average_visit_duration`
+  - `entry_fee`
+  - `safety_notes`
+  - `local_tips`
+- Plus categorical fields such as `city`, `category`, `governorate`
 
-- `category`
-- `accessibility`
-- `short_description`
-- `what_makes_it_special`
+### Qdrant (vector index)
 
-If you add more columns and want them searchable, extend the `chunks` list in `app/ingestion.py`.
+During vector ingestion (`app/ingestion.py: ingest_mongodb`):
+
+- We read all destination documents from MongoDB.
+- We embed (if present) multiple text fields per place, such as:
+  - `short_description`
+  - `historical_context`
+  - `what_makes_it_special`
+  - `visitor_experience`
+  - `opening_hours`
+  - `entry_fee`
+  - `safety_notes`
+  - etc.
+- Each embedded chunk is stored as a Qdrant point with `field_type=<field_name>` and `text=<field_value>`.
+- We store filterable metadata in Qdrant payload:
+  - `city` and `category` are normalized to lowercase/trimmed for exact-match filters.
+  - `is_wheelchair_accessible` is derived from `accessibility` as a boolean.
 
 ## Setup (local development)
 
@@ -107,10 +131,10 @@ GROQ_MODEL=llama-3.3-70b-versatile
 
 ## Run the project
 
-### 1) Ingest the Excel file into Qdrant
+### 1) Ingest MongoDB destinations into Qdrant
 
 ```bash
-python -c "from app.ingestion import ingest_excel; ingest_excel('data/Categorized_Locations.xlsx')"
+python -c "from app.ingestion import ingest_mongodb; ingest_mongodb()"
 ```
 
 ### 2) Start the API server
@@ -179,13 +203,30 @@ Swagger UI will be at `http://127.0.0.1:8000/docs`.
 {
   "response": "string",
   "sources": [
-    { "place_id": "egy_023", "field_type": "description" }
+    { "place_id": "egy_023", "field_type": "entry_fee" }
+  ],
+  "confidence": 0.87,
+  "matched_filters": {
+    "city": "cairo",
+    "category": "historical",
+    "wheelchair_only": false
+  },
+  "places": [
+    {
+      "place_id": "egy_023",
+      "name": "Abdeen Palace",
+      "category": "museums",
+      "city": "cairo"
+    }
   ]
 }
 ```
 
 - **`response`**: final, human-readable answer. If no data matches the filters, this explicitly says so (e.g. *"No matching places were found that satisfy the requested constraints..."*).
-- **`sources`**: minimal provenance list for the answer; each item references the originating `place_id` and which text field was used (`description` / `significance`).
+- **`sources`**: minimal provenance list for the answer; each item references the originating `place_id` and which text field was used (e.g. `entry_fee`, `opening_hours`, `short_description`).
+- **`confidence`**: best similarity score returned from Qdrant (useful for UI and analytics).
+- **`matched_filters`**: echo of which filters were actually applied for this query.
+- **`places`**: lightweight view of the distinct places backing the answer (for cards, lists, etc.).
 
 #### RAG pipeline behavior (high level)
 
@@ -195,7 +236,10 @@ Swagger UI will be at `http://127.0.0.1:8000/docs`.
 4. **Build context** string from retrieved chunks (`build_context` in `app/generation.py`).
 5. **Generate answer**:
    - If `GROQ_API_KEY` is set, call Groq and ask it to answer *only* from the provided context.
-   - If not, fall back to a deterministic answer that simply summarizes the context.
+   - If not, fall back to a rule-based answer that:
+     - Tries to pick the place whose name best matches the query (e.g. “Abdeen Palace”).
+     - For fee/time questions, answers from the specific fields (`entry_fee`, `opening_hours`, etc.) for that place if present.
+     - Otherwise, summarizes the most relevant chunks for that place.
 6. If **no points match the filters**, the API returns a safe, explicit “no results” message with an empty `sources` array instead of guessing.
 
 ### CRUD routers (MongoDB)
