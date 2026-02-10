@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from app.models import QueryRequest, QueryResponse
+from app.models import QueryRequest, QueryResponse, PlaceSummary
 from app.retrieval import retrieve
 from app.generation import build_context, generate
 from app.routes import destinations, tourists, locals, posts, shops, vehicles
@@ -54,8 +54,28 @@ def query_rag(req: QueryRequest, current_user: str = Depends(get_current_user)):
     """
     results = retrieve(
         req.query,
-        wheelchair_only=req.wheelchair_only
+        top_k=req.limit,
+        wheelchair_only=req.wheelchair_only,
+        city=req.city,
+        category=req.category,
     )
+
+    # Guardrail: if filters eliminate everything, be honest instead of fabricating
+    if not results:
+        return QueryResponse(
+            response=(
+                "No matching places were found that satisfy the requested constraints "
+                "(city/category/accessibility)."
+            ),
+            sources=[],
+            confidence=None,
+            matched_filters={
+                "city": req.city,
+                "category": req.category,
+                "wheelchair_only": req.wheelchair_only,
+            },
+            places=[],
+        )
 
     context = build_context(results)
 
@@ -65,15 +85,42 @@ def query_rag(req: QueryRequest, current_user: str = Depends(get_current_user)):
     except ValueError:
         answer = f"ANSWER BASED ON:\n{context}"
 
-    sources = [
-        {
-            "place_id": r.payload["place_id"],
-            "field_type": r.payload["field_type"]
-        }
-        for r in results
-    ]
+    # Build source list and lightweight place summaries
+    sources = []
+    place_map: dict[str, PlaceSummary] = {}
 
-    return {
-        "response": answer,
-        "sources": sources
-    }
+    for r in results:
+        payload = r.payload
+        place_id = payload.get("place_id")
+        if place_id is None:
+            continue
+
+        sources.append(
+            {
+                "place_id": place_id,
+                "field_type": payload.get("field_type"),
+            }
+        )
+
+        if place_id not in place_map:
+            place_map[place_id] = PlaceSummary(
+                place_id=place_id,
+                name=payload.get("name"),
+                category=payload.get("category"),
+                city=payload.get("city"),
+            )
+
+    # Confidence = best similarity score from Qdrant (if available)
+    confidence = max((getattr(r, "score", None) or 0.0) for r in results) if results else None
+
+    return QueryResponse(
+        response=answer,
+        sources=sources,
+        confidence=confidence,
+        matched_filters={
+            "city": req.city,
+            "category": req.category,
+            "wheelchair_only": req.wheelchair_only,
+        },
+        places=list(place_map.values()),
+    )

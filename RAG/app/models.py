@@ -4,13 +4,35 @@ from pydantic import BaseModel
 
 
 class QueryRequest(BaseModel):
+    """Chatbot → backend request contract for RAG."""
+
     query: str
     wheelchair_only: bool = False
+    # Optional structured filters; if provided we enforce them at retrieval time
+    city: Optional[str] = None
+    category: Optional[str] = None
+    # Optional cap on number of hits / context size
+    limit: int = 5
+
+
+class PlaceSummary(BaseModel):
+    place_id: str
+    name: Optional[str] = None
+    category: Optional[str] = None
+    city: Optional[str] = None
 
 
 class QueryResponse(BaseModel):
+    """Backend → chatbot response contract for RAG."""
+
     response: str
     sources: list
+    # Optional: how strong the best match was (0–1+ depending on Qdrant config)
+    confidence: Optional[float] = None
+    # Echo which filters were actually applied
+    matched_filters: Optional[dict] = None
+    # Optional: light-weight view of the places backing the answer
+    places: Optional[List[PlaceSummary]] = None
 
 
 class IngestionResponse(BaseModel):

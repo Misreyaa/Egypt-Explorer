@@ -145,23 +145,58 @@ Swagger UI will be at `http://127.0.0.1:8000/docs`.
 
 - `POST /query` (protected; requires `Authorization: Bearer <token>`)
 
-Request body (`app.models.QueryRequest`):
+#### Request body (`app.models.QueryRequest`)
+
+**Minimal required:**
 
 ```json
-{ "query": "string", "wheelchair_only": false }
+{
+  "query": "string"
+}
 ```
 
-Response (`app.models.QueryResponse`):
+**Full shape with optional structured filters:**
 
 ```json
-{ "response": "string", "sources": [ { "place_id": "…", "field_type": "…" } ] }
+{
+  "query": "historical places in cairo",
+  "wheelchair_only": false,
+  "city": "cairo",          // optional hard filter
+  "category": "museums",    // optional hard filter
+  "limit": 5                // optional, defaults to 5
+}
 ```
 
-Behavior:
+- **`query`** (required): raw user text, any natural-language question.
+- **`wheelchair_only`** (optional, bool): if `true`, only places with `is_wheelchair_accessible = true` are eligible.
+- **`city`** (optional, string): hard filter; normalized to lowercase/trimmed and matched against the `city` payload field.
+- **`category`** (optional, string): hard filter; normalized and matched against the `category` payload field.
+- **`limit`** (optional, int): max number of hits; controls both result count and context size.
 
-- Retrieves top matches from Qdrant (`app/retrieval.py`)
-- Builds a context string (`app/generation.py: build_context`)
-- If `GROQ_API_KEY` is set, generates a final answer via Groq; otherwise returns a fallback answer based on context
+#### Response body (`app.models.QueryResponse`)
+
+```json
+{
+  "response": "string",
+  "sources": [
+    { "place_id": "egy_023", "field_type": "description" }
+  ]
+}
+```
+
+- **`response`**: final, human-readable answer. If no data matches the filters, this explicitly says so (e.g. *"No matching places were found that satisfy the requested constraints..."*).
+- **`sources`**: minimal provenance list for the answer; each item references the originating `place_id` and which text field was used (`description` / `significance`).
+
+#### RAG pipeline behavior (high level)
+
+1. **Embed query** using the sentence-transformers model into a dense vector.
+2. **Apply hard filters** (`city`, `category`, `wheelchair_only`) at Qdrant level; only matching points are eligible.
+3. **Vector search** in Qdrant on the filtered subset to get top‑`k` chunks.
+4. **Build context** string from retrieved chunks (`build_context` in `app/generation.py`).
+5. **Generate answer**:
+   - If `GROQ_API_KEY` is set, call Groq and ask it to answer *only* from the provided context.
+   - If not, fall back to a deterministic answer that simply summarizes the context.
+6. If **no points match the filters**, the API returns a safe, explicit “no results” message with an empty `sources` array instead of guessing.
 
 ### CRUD routers (MongoDB)
 

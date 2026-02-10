@@ -32,6 +32,35 @@ def ingest_excel(path: str):
         place_id = str(row["place_id"])
         name = row["name"]
 
+        # Normalize city/category/accessibility so filters can match reliably
+        raw_city = row.get("city")
+        city = (
+            str(raw_city).strip().lower()
+            if pd.notna(raw_city)
+            else None
+        )
+
+        raw_category = row.get("category")
+        category = (
+            str(raw_category).strip().lower()
+            if pd.notna(raw_category)
+            else None
+        )
+
+        governorate = row.get("governorate")
+        accessibility = row.get("accessibility")
+
+        # Normalize accessibility into a boolean flag for robust filtering
+        is_wheelchair_accessible = False
+        if isinstance(accessibility, str):
+            normalized = accessibility.strip().lower()
+            is_wheelchair_accessible = normalized in {
+                "wheelchair accessible",
+                "accessible",
+                "yes",
+                "fully accessible",
+            }
+
         chunks = []
 
         if pd.notna(row.get("short_description")):
@@ -52,8 +81,11 @@ def ingest_excel(path: str):
                         "name": name,
                         "field_type": field,
                         "text": text,
-                        "category": row.get("category"),
-                        "accessibility": row.get("accessibility")
+                        "category": category,
+                        "city": city,
+                        "governorate": governorate,
+                        "accessibility": accessibility,
+                        "is_wheelchair_accessible": is_wheelchair_accessible,
                     }
                 )
             )
