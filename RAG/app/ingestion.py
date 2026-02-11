@@ -49,7 +49,9 @@ def ingest_mongodb(
     mongodb_db = mongodb_db or os.getenv("MONGODB_DB", "egyreal")
 
     mongo = MongoClient(mongodb_uri)
-    docs: Iterable[Dict[str, Any]] = mongo[mongodb_db][collection].find({})
+    mongo_db = mongo[mongodb_db]
+    mongo_collection = mongo_db[collection]
+    docs: Iterable[Dict[str, Any]] = mongo_collection.find({})
 
     try:
         client.create_collection(
@@ -78,24 +80,100 @@ def ingest_mongodb(
         accessibility = d.get("accessibility")
         is_wheelchair_accessible = _is_wheelchair_accessible(accessibility)
 
-        # Only embed key descriptive fields; structured facts (fees, hours, etc.)
-        # are answered directly from MongoDB.
-        text_fields = [
-            "short_description",
-            "historical_context",
-            "what_makes_it_special",
-        ]
+        # -----------------------------
+        # Normalize opening/closing hours → minutes
+        # -----------------------------
+        opening_hour = d.get("opening_hour")
+        closing_hour = d.get("closing_hour")
 
-        chunks: list[tuple[str, str]] = []
-        for field in text_fields:
-            value = d.get(field)
-            if isinstance(value, str):
-                text = value.strip()
-                if text:
-                    chunks.append((field, text))
+        open_minutes = None
+        close_minutes = None
 
-        for field, text in chunks:
-            embedding = model.encode(text).tolist()
+        try:
+            if opening_hour is not None:
+                oh = float(opening_hour)
+                if 0.0 <= oh <= 24.0:
+                    open_minutes = int(oh * 60)
+            if closing_hour is not None:
+                ch = float(closing_hour)
+                if 0.0 <= ch <= 24.0:
+                    close_minutes = int(ch * 60)
+        except (TypeError, ValueError):
+            # Leave minutes as None if parsing fails
+            open_minutes = None
+            close_minutes = None
+
+        # Persist normalized minutes back into Mongo so numeric filters
+        # can be applied directly in the API layer.
+        update_fields: Dict[str, Any] = {}
+        if open_minutes is not None:
+            update_fields["open_minutes"] = open_minutes
+        if close_minutes is not None:
+            update_fields["close_minutes"] = close_minutes
+        if update_fields:
+            mongo_collection.update_one({"_id": d["_id"]}, {"$set": update_fields})
+
+        # -----------------------------
+        # Build Qdrant payloads
+        # -----------------------------
+        # 1) Activities → individual "activity" chunks
+        activities = d.get("activities") or []
+        if isinstance(activities, list):
+            for raw_activity in activities:
+                if not isinstance(raw_activity, str):
+                    continue
+                activity_text = raw_activity.strip()
+                if not activity_text:
+                    continue
+
+                embedding = model.encode(activity_text).tolist()
+                points.append(
+                    PointStruct(
+                        id=str(uuid4()),
+                        vector=embedding,
+                        payload={
+                            "place_id": place_id,
+                            "name": name,
+                            "field_type": "activity",
+                            "chunk_type": "activity",
+                            "text": activity_text,
+                            "category": category,
+                            "city": city,
+                            "governorate": governorate,
+                            "accessibility": accessibility,
+                            "is_wheelchair_accessible": is_wheelchair_accessible,
+                        },
+                    )
+                )
+
+        # 2) Descriptive content → single combined "description" chunk
+        short_description = (d.get("short_description") or "").strip()
+        historical_context = (d.get("historical_context") or "").strip()
+        what_makes_it_special = (d.get("what_makes_it_special") or "").strip()
+        sub_category = (d.get("sub_category") or "").strip()
+        raw_category = (d.get("category") or "").strip()
+
+        tags_value = d.get("tags") or []
+        if isinstance(tags_value, list):
+            tags_text = ", ".join(str(t).strip() for t in tags_value if str(t).strip())
+        else:
+            tags_text = str(tags_value).strip()
+
+        description_parts: list[str] = []
+        for part in [
+            short_description,
+            what_makes_it_special,
+            historical_context,
+            sub_category,
+            raw_category,
+            f"tags: {tags_text}" if tags_text else "",
+        ]:
+            if part:
+                description_parts.append(part)
+
+        if description_parts:
+            combined_text = "\n".join(description_parts)
+            embedding = model.encode(combined_text).tolist()
             points.append(
                 PointStruct(
                     id=str(uuid4()),
@@ -103,8 +181,9 @@ def ingest_mongodb(
                     payload={
                         "place_id": place_id,
                         "name": name,
-                        "field_type": field,
-                        "text": text,
+                        "field_type": "description",
+                        "chunk_type": "description",
+                        "text": combined_text,
                         "category": category,
                         "city": city,
                         "governorate": governorate,

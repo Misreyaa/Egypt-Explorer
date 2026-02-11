@@ -1,7 +1,9 @@
+import ast
+
 import pandas as pd
 from pymongo import MongoClient
 
-EXCEL_PATH = "data/Categorized_Locations.xlsx"
+EXCEL_PATH = "data/Locations.xlsx"
 MONGODB_URI = "mongodb://localhost:27017"
 MONGODB_DB = "egyreal"
 
@@ -22,6 +24,52 @@ def safe_text(value):
     # Fallback: stringify and re-encode/decode to normalize
     s = str(value)
     return s.encode("utf-8", errors="replace").decode("utf-8").strip()
+
+
+def parse_list_cell(value):
+    """
+    Normalize Excel cells that represent lists into real Python lists of strings.
+
+    Handles cases like:
+    - \"['a', 'b']\" (Python-list-like string)
+    - \"a, b, c\" (comma-separated)
+    - single plain strings → [string]
+    - NaN / empty → []
+    """
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return []
+
+    # Already a list
+    if isinstance(value, list):
+        return [safe_text(v) for v in value if safe_text(v)]
+
+    # Text representation
+    if isinstance(value, (str, bytes, bytearray)):
+        text = safe_text(value) or ""
+        if not text:
+            return []
+
+        # Try to parse Python-list-like strings: "['a', 'b']"
+        if text.startswith("[") and text.endswith("]"):
+            try:
+                parsed = ast.literal_eval(text)
+                if isinstance(parsed, list):
+                    return [safe_text(v) for v in parsed if safe_text(v)]
+            except (ValueError, SyntaxError):
+                # Fall back to treating it as a plain string below
+                pass
+
+        # Fallback: treat as comma-separated list
+        if "," in text:
+            return [safe_text(part) for part in text.split(",") if safe_text(part)]
+
+        # Single value
+        single = safe_text(text)
+        return [single] if single else []
+
+    # Any other type → wrap as single element list
+    single = safe_text(value)
+    return [single] if single else []
 
 
 def import_excel_to_mongo(path: str = EXCEL_PATH):
@@ -47,6 +95,11 @@ def import_excel_to_mongo(path: str = EXCEL_PATH):
             # Always store place_id as a normalized string
             if col == "place_id":
                 doc["place_id"] = place_id
+                continue
+
+            # Normalize list-like fields to actual lists of strings
+            if col in {"activities", "tags", "sources"}:
+                doc[col] = parse_list_cell(value)
                 continue
 
             # For textual/bytes fields, sanitize to UTF‑8-safe strings

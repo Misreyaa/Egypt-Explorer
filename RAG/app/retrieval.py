@@ -11,10 +11,11 @@ model = SentenceTransformer(EMBEDDING_MODEL)
 
 def retrieve(
     query: str,
-    top_k: int = 5,
+    top_k: int = 10,
     wheelchair_only: bool = False,
     city: str | None = None,
     category: str | None = None,
+    chunk_type: str | None = None,
 ):
     """
     Retrieve top_k points from Qdrant with hard metadata filters applied.
@@ -46,6 +47,14 @@ def retrieve(
             FieldCondition(
                 key="category",
                 match=MatchValue(value=category),
+            )
+        )
+
+    if chunk_type:
+        must_conditions.append(
+            FieldCondition(
+                key="chunk_type",
+                match=MatchValue(value=chunk_type),
             )
         )
 
