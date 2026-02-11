@@ -19,13 +19,15 @@ class LocalSignupRequest(BaseModel):
     name: str
     email: EmailStr
     password: str
-    languages: List[str] = []
+    spoken_languages: List[str] = []
     occupation: str
     phone: str
     city: str
     vehicle_info: Optional[dict] = None
     shop_info: Optional[dict] = None
+    bio: Optional[str]=''
+    avatar_url: Optional[str]=''
 
 class LoginRequest(BaseModel):
-    username: str
+    email: str
     password: str

@@ -7,56 +7,35 @@ from ..utils import hash_password, verify_password
 
 router = APIRouter()
 
-# ----------------- Signup -----------------
-@router.post("/signup")
-async def signup(tourist: TouristSignupRequest):
-    existing = await tourists_collection.find_one({"email": tourist.email})
-    if existing:
-        raise HTTPException(status_code=400, detail="email already used")
 
-    tourist_dict = tourist.dict()
-    tourist_dict["password"] = hash_password(tourist_dict["password"])
-    result = await tourists_collection.insert_one(tourist_dict)
-    return {"id": str(result.inserted_id)}
-
-# ----------------- Login -----------------
-@router.post("/login")
-async def login(data: LoginRequest):
-    user = await tourists_collection.find_one({"email": data.email})
-    if not user or not verify_password(data.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    access_token = create_access_token({"sub": user["email"]})
-    return {"access_token": access_token, "token_type": "bearer"}
-
-@router.put("/{username}")
+@router.put("/{email}")
 async def update_tourist(
-    username: str,
+    email: str,
     update: Tourist,
     current_user: str = Depends(get_current_user)
 ):
     # Only allow the authenticated user to update their own account
-    if current_user != username:
+    if current_user != email:
         raise HTTPException(status_code=403, detail="Not allowed to update this user")
 
     result = await tourists_collection.update_one(
-        {"username": username}, {"$set": update.dict()}
+        {"email": email}, {"$set": update.dict()}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Tourist not found")
     return {"updated": result.modified_count}
 
 # ----------------- Delete Tourist -----------------
-@router.delete("/{username}")
+@router.delete("/{email}")
 async def delete_tourist(
-    username: str,
+    email: str,
     current_user: str = Depends(get_current_user)
 ):
     # Only allow the authenticated user to delete their own account
-    if current_user != username:
+    if current_user != email:
         raise HTTPException(status_code=403, detail="Not allowed to delete this user")
 
-    result = await tourists_collection.delete_one({"username": username})
+    result = await tourists_collection.delete_one({"email": email})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Tourist not found")
     return {"deleted": result.deleted_count}
@@ -78,15 +57,15 @@ async def match_destinations(
     }).to_list(length=50)
     return matched
 
-@router.get("/{username}/match_locals")
+@router.get("/{email}/match_locals")
 async def match_locals(
-    username: str,
+    email: str,
     current_user: str = Depends(get_current_user)
 ):
-    if current_user != username:
+    if current_user != email:
         raise HTTPException(status_code=403, detail="Not allowed to view this user's matches")
 
-    tourist = await tourists_collection.find_one({"username": username})
+    tourist = await tourists_collection.find_one({"email": email})
     if not tourist:
         raise HTTPException(status_code=404, detail="Tourist not found")
     matched = await locals_collection.find({

@@ -2,27 +2,30 @@ import React from 'react';
 import { TravelCard, Destination } from './TravelCard';
 import { TourDetailsDialog } from './TourDetailsDialog';
 import { useUser } from '../context/UserContext';
-
-import { allDestinations } from '../data/destinations';
+import { useDestinations } from '../hooks/useDestinations';
 
 export const RecommendationsPage: React.FC = () => {
   const { user } = useUser();
+  const { destinations, loading } = useDestinations();
   const [selectedDestination, setSelectedDestination] = React.useState<Destination | null>(null);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   const getRecommendations = (): Destination[] => {
-    if (!user || user.userType !== 'tourist') return allDestinations;
+    if (!user || user.userType !== 'tourist') return destinations;
 
     const profile = user.profile;
-    return allDestinations
+    return destinations
       .filter(dest => {
-        const matchesActivities = dest.category.some(cat => profile.activities.includes(cat));
+        const categories = Array.isArray(dest.category) ? dest.category : [];
+        const matchesActivities = categories.some(cat => profile.activities.includes(cat));
         const matchesTravelType = dest.travelType.includes(profile.travelType);
         return matchesActivities || matchesTravelType;
       })
       .sort((a, b) => {
-        const aScore = a.category.filter(cat => profile.activities.includes(cat)).length;
-        const bScore = b.category.filter(cat => profile.activities.includes(cat)).length;
+        const aCategories = Array.isArray(a.category) ? a.category : [];
+        const bCategories = Array.isArray(b.category) ? b.category : [];
+        const aScore = aCategories.filter(cat => profile.activities.includes(cat)).length;
+        const bScore = bCategories.filter(cat => profile.activities.includes(cat)).length;
         return bScore - aScore;
       });
   };
@@ -30,7 +33,7 @@ export const RecommendationsPage: React.FC = () => {
   const recommendations = getRecommendations();
 
   const handleViewDetails = (id: string) => {
-    const destination = allDestinations.find(d => d.id === id);
+    const destination = destinations.find(d => d.id === id);
     if (destination) {
       setSelectedDestination(destination);
       setIsDialogOpen(true);
@@ -43,6 +46,11 @@ export const RecommendationsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-6 sm:py-8 md:py-12 px-4">
+        {loading && (
+          <div className="mb-4 text-muted-foreground text-sm">
+            Loading destinations from Egypt Explorer...
+          </div>
+        )}
         <div className="mb-6 sm:mb-8 md:mb-12">
           <h1 className="mb-2 sm:mb-3 text-brown-dark font-bold text-2xl sm:text-3xl md:text-4xl">
             Walk the Streets of Egypt

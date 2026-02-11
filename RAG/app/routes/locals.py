@@ -7,27 +7,6 @@ from ..utils import hash_password, verify_password
 
 router = APIRouter()
 
-# ----------------- Signup -----------------
-@router.post("/signup")
-async def signup(local: LocalSignupRequest):
-    existing = await locals_collection.find_one({"email": local.email})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    local_dict = local.dict()
-    local_dict["password"] = hash_password(local_dict["password"])
-    result = await locals_collection.insert_one(local_dict)
-    return {"id": str(result.inserted_id)}
-
-# ----------------- Login -----------------
-@router.post("/login")
-async def login(data: LoginRequest):
-    user = await locals_collection.find_one({"email": data.username})
-    if not user or not verify_password(data.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    access_token = create_access_token({"sub": user["email"]})
-    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.put("/{email}")
 async def update_local(

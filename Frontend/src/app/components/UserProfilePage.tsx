@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { countries } from '../data/countries';
 import { languages } from '../data/languages';
 import { currencies } from '../data/currencies';
-import { allDestinations } from '../data/destinations';
+import { useDestinations } from '../hooks/useDestinations';
 
 export const UserProfilePage: React.FC<{ onNavigate?: (page: string) => void }> = ({ onNavigate }) => {
   const { user, updateProfile } = useUser();
@@ -82,7 +82,8 @@ export const UserProfilePage: React.FC<{ onNavigate?: (page: string) => void }> 
   if (!formData) return <div>Loading...</div>;
 
   const wishlist = user.userType === 'tourist' ? user.profile.wishlist || [] : [];
-  const wishlistDestinations = allDestinations.filter(dest => 
+  const { destinations, loading: destinationsLoading } = useDestinations();
+  const wishlistDestinations = destinations.filter(dest =>
     wishlist.includes(dest.id)
   );
 
@@ -465,6 +466,11 @@ export const UserProfilePage: React.FC<{ onNavigate?: (page: string) => void }> 
             )}
           </CardHeader>
           <CardContent>
+            {destinationsLoading && (
+              <div className="mb-2 text-muted-foreground text-xs">
+                Loading destinations from Egypt Explorer...
+              </div>
+            )}
             {wishlistDestinations.length > 0 ? (
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                 {wishlistDestinations.map((dest) => (

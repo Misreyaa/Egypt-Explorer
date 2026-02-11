@@ -2,24 +2,25 @@ import React from 'react';
 import { useUser } from '../context/UserContext';
 import { TravelCard, Destination } from './TravelCard';
 import { TourDetailsDialog } from './TourDetailsDialog';
-import { allDestinations } from '../data/destinations';
+import { useDestinations } from '../hooks/useDestinations';
 import { Heart, Navigation } from 'lucide-react';
 import { Button } from './ui/button';
 
 export const WishlistPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
   const { user } = useUser();
+  const { destinations, loading } = useDestinations();
   const [selectedDestination, setSelectedDestination] = React.useState<Destination | null>(null);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   const wishlist = user?.userType === 'tourist' ? user.profile.wishlist : [];
   const userActivities = user?.userType === 'tourist' ? user.profile.activities : [];
 
-  const wishlistDestinations = allDestinations.filter(dest => 
+  const wishlistDestinations = destinations.filter(dest => 
     wishlist?.includes(dest.id)
   );
 
   const handleViewDetails = (id: string) => {
-    const destination = allDestinations.find(d => d.id === id);
+    const destination = destinations.find(d => d.id === id);
     if (destination) {
       setSelectedDestination(destination);
       setIsDialogOpen(true);
@@ -38,6 +39,12 @@ export const WishlistPage: React.FC<{ onNavigate: (page: string) => void }> = ({
             The places and experiences you've saved for your Egyptian journey.
           </p>
         </div>
+
+        {loading && (
+          <div className="mb-4 text-muted-foreground text-sm">
+            Loading destinations from Egypt Explorer...
+          </div>
+        )}
 
         {wishlistDestinations.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

@@ -3,11 +3,11 @@ import { TravelCard } from './TravelCard';
 import { TourDetailsDialog } from './TourDetailsDialog';
 import { useUser } from '../context/UserContext';
 import { Compass } from 'lucide-react';
-
-import { allDestinations } from '../data/destinations';
+import { useDestinations } from '../hooks/useDestinations';
 
 export const ComfortZonePage: React.FC = () => {
   const { user } = useUser();
+  const { destinations, loading } = useDestinations();
   const [selectedDestination, setSelectedDestination] = React.useState<any | null>(null);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
@@ -16,9 +16,10 @@ export const ComfortZonePage: React.FC = () => {
 
     const profile = user.profile;
     // Filter destinations that do NOT match the user's selected activities
-    return allDestinations
+    return destinations
       .filter(dest => {
-        const matchesActivities = dest.category.some(cat => profile.activities.includes(cat));
+        const categories = Array.isArray(dest.category) ? dest.category : [];
+        const matchesActivities = categories.some(cat => profile.activities.includes(cat));
         return !matchesActivities;
       });
   };
@@ -27,7 +28,7 @@ export const ComfortZonePage: React.FC = () => {
   const userActivities = user?.userType === 'tourist' ? user.profile.activities : [];
 
   const handleViewDetails = (id: string) => {
-    const destination = allDestinations.find(d => d.id === id);
+    const destination = destinations.find(d => d.id === id);
     if (destination) {
       setSelectedDestination(destination);
       setIsDialogOpen(true);
@@ -51,6 +52,12 @@ export const ComfortZonePage: React.FC = () => {
             Here are some experiences completely different from your usual style. Try something new!
           </p>
         </div>
+
+        {loading && (
+          <div className="mb-4 text-center text-muted-foreground text-sm">
+            Loading destinations from Egypt Explorer...
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {recommendations.map((destination) => (

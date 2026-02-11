@@ -11,7 +11,7 @@ from app.reranker import rerank
 
 from app.generation import build_context, generate, build_rule_based_answer
 
-from app.routes import destinations, tourists, locals, posts, shops, vehicles
+from app.routes import destinations, tourists, locals, posts, shops, vehicles, user
 
 from app.auth import create_access_token, get_current_user  # get_current_user verifies JWT
 
@@ -224,11 +224,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("hello")
-def hello():
-    print("hello has been invoced")
-    return {"response": "hello"}
-
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -256,6 +251,9 @@ app.include_router(locals.router, prefix="/locals", tags=["Locals"])
 app.include_router(posts.router, prefix="/posts", tags=["Posts"])
 app.include_router(shops.router, prefix="/shops", tags=["Shops"])
 app.include_router(vehicles.router, prefix="/vehicles", tags=["Vehicles"])
+app.include_router(user.router, prefix="", tags=["Users"])
+
+
 
 # -----------------------------
 # Protected Query Endpoint
