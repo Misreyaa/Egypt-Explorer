@@ -1,150 +1,59 @@
-from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional
 
+# ------------------ User Models ------------------
 
-class QueryRequest(BaseModel):
-    """Chatbot → backend request contract for RAG."""
-
-    query: str
-    wheelchair_only: bool = False
-    # Optional structured filters; if provided we enforce them at retrieval time
-    city: Optional[str] = None
-    category: Optional[str] = None
-    # Optional cap on number of hits / context size
-    limit: int = 5
-
-
-class PlaceSummary(BaseModel):
-    place_id: str
-    name: Optional[str] = None
-    category: Optional[str] = None
-    city: Optional[str] = None
-
-
-class QueryResponse(BaseModel):
-    """Backend → chatbot response contract for RAG."""
-
-    response: str
-    sources: list
-    # Optional: how strong the best match was (0–1+ depending on Qdrant config)
-    confidence: Optional[float] = None
-    # Echo which filters were actually applied
-    matched_filters: Optional[dict] = None
-    # Optional: light-weight view of the places backing the answer
-    places: Optional[List[PlaceSummary]] = None
-
-
-class IngestionResponse(BaseModel):
-    status: str
-    documents_processed: int
-    collection_name: str
-    message: str
-
-
-class Location(BaseModel):
-    lat: float
-    lng: float
-
-
-class Destination(BaseModel):
-    name: str
-    place_id: str
-    category: Optional[str]
-    sub_category: Optional[str]
-    city: Optional[str]
-    governorate: Optional[str]
-    location: Optional[Location]
-    short_description: Optional[str]
-    historical_context: Optional[str]
-    what_makes_it_special: Optional[str]
-    visitor_experience: Optional[str]
-    opening_hours: Optional[str]
-    best_time_to_visit: Optional[str]
-    dress_code: Optional[str]
-    accessibility: Optional[str]
-    traffic_and_access: Optional[str]
-    average_visit_duration: Optional[str]
-    entry_fee: Optional[str]
-    safety_notes: Optional[str]
-    local_tips: Optional[str]
-    tags: List[str] = []
-    sources: List[str] = []
-    last_updated: Optional[str]
-    image_path: Optional[str]
-
-
-class Tourist(BaseModel):
-    name: str
-    username: str
-    email: str
-    password_hash: str
-    languages: List[str] = []         # frontend single language wrapped as list
-    preferences: List[str] = []       # frontend activities
-    visited: List[str] = []
-    favorites: List[str] = []
-    bio: Optional[str] = None
-    profile_picture: Optional[str] = None  # avatarUrl from frontend
-    posts: List[str] = []
-    national_id: str
-    verified: bool = False
-    age: Optional[int] = None
-    country: Optional[str] = None
-    currency: Optional[str] = None
-    app_language: Optional[str] = "English"
-    travel_type: Optional[str] = "solo"  # "solo" | "group" | "family"
-
-
-class Local(BaseModel):
-    name: str
-    email: str
-    phone: Optional[str]
-    city: str
-    languages: List[str] = []
-    occupation: str
-    vehicle_or_shop_id: Optional[str] = None
-    posts: List[str] = []
-    rating: Optional[float] = None
-    reviews: List[str] = []
-    bio: Optional[str] = None
-    profile_picture: Optional[str] = None
-
-
-class Comment(BaseModel):
-    author_id: str
-    author_type: str  # "tourist" or "local"
-    content: str
-    timestamp: Optional[str] = None
-
-
-class Post(BaseModel):
-    post_id: str
-    author_id: str
-    title: Optional[str] = None
-    content: str
-    tags: List[str] = []
-    timestamp: Optional[str] = None
-    comments: List[Comment] = []
-
-
-class Shop(BaseModel):
-    shop_id: str
-    owner_id: str
-    name: str
-    city: str
-    address: Optional[str] = None
-    phone: Optional[str] = None
-    description: Optional[str] = None
-    opening_hours: Optional[str] = None
-    categories: Optional[list[str]] = []
-    rating: Optional[float] = None
-
-
-class Vehicle(BaseModel):
-    vehicle_id: str
-    owner_id: str
-    type: str
+class VehicleInfo(BaseModel):
+    vehicle_type: str
     license_plate: str
     city: str
-    capacity: Optional[int] = None
-    description: Optional[str] = None
-    rating: Optional[float] = None
+    capacity: Optional[int]
+    description: Optional[str]
+
+class ShopInfo(BaseModel):
+    name: str
+    city: str
+    address: Optional[str]
+    phone: Optional[str]
+    description: Optional[str]
+    opening_hours: Optional[str]
+    categories: List[str] = []
+
+class LocalProfile(BaseModel):
+    name: str
+    age: Optional[int]
+    city: str
+    occupation: str  # driver | shopkeeper | neighborhood_tourguide
+    bio: Optional[str]
+    avatar_url: Optional[str]
+    national_id: str
+    phone: str
+    spoken_languages: List[str] = []
+    vehicle_info: Optional[VehicleInfo]
+    shop_info: Optional[ShopInfo]
+    has_seen_rules: Optional[bool] = False
+    earnings: Optional[float] = 0.0
+    insta_pay_details: Optional[str]
+
+class UserProfile(BaseModel):
+    name: str
+    username: str
+    email: EmailStr
+    password: str
+    age: Optional[int]
+    country: Optional[str]
+    languages: List[str] = []
+    currency: Optional[str]
+    app_language: Optional[str] = "English"
+    travel_type: Optional[str] = "solo"  # solo | group | family
+    activities: List[str] = []
+    avatar_url: Optional[str]
+    bio: Optional[str]
+    wishlist: List[str] = []
+    visited: List[str] = []
+    favorites: List[str] = []
+    posts: List[str] = []
+
+class User(BaseModel):
+    user_type: str  # tourist | local
+    profile: UserProfile | LocalProfile
