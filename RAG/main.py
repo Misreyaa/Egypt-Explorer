@@ -1,13 +1,20 @@
 import re
 
+import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.models import QueryRequest, QueryResponse, PlaceSummary
+
+
 from app.retrieval import retrieve
 from app.reranker import rerank
+
 from app.generation import build_context, generate, build_rule_based_answer
+
 from app.routes import destinations, tourists, locals, posts, shops, vehicles
+
 from app.auth import create_access_token, get_current_user  # get_current_user verifies JWT
+
 from app.db import destinations_collection
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,7 +22,6 @@ origins = [
     "http://localhost:5174",
     "http://127.0.0.1:5174",
 ]
-
 
 
 def _is_missing_value(value) -> bool:
@@ -217,6 +223,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("hello")
+def hello():
+    print("hello has been invoced")
+    return {"response": "hello"}
 
 @app.get("/health")
 def health():
@@ -526,3 +537,5 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
         },
         places=list(place_map.values()),
     )
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8080)
