@@ -1,4 +1,8 @@
+from typing import List
+
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
+
 from ..models import Tourist
 from ..db import tourists_collection, destinations_collection, locals_collection
 from ..auth import create_access_token, get_current_user
@@ -72,3 +76,31 @@ async def match_locals(
         "languages": {"$in": tourist.get("languages", [])}
     }).to_list(length=50)
     return matched
+class WishlistRequest(BaseModel):
+    destination_id: str
+    email:str
+
+@router.post("/add_to_wishlist")
+async def add_to_wishlist(req: WishlistRequest):
+    # 1️⃣ Find the tourist by email
+    tourist = await tourists_collection.find_one(req.email)
+    if not tourist:
+        raise HTTPException(status_code=404, detail="Tourist not found")
+
+    # 2️⃣ Initialize wishlist if it doesn't exist
+    wishlist: List[str] = tourist.get("wishlist", [])
+
+    # 3️⃣ Avoid duplicates
+    if req.destination_id in wishlist:
+        return {"message": "Destination already in wishlist", "wishlist": wishlist}
+
+    # 4️⃣ Add the new destination
+    wishlist.append(req.destination_id)
+
+    # 5️⃣ Update the DB
+    await tourists_collection.update_one(
+        {"email": req.email},
+        {"$set": {"wishlist": wishlist}}
+    )
+
+    return {"message": "Destination added to wishlist", "wishlist": wishlist}

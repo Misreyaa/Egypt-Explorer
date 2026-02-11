@@ -36,20 +36,23 @@ export const TourDetailsDialog: React.FC<
   const { user, toggleWishlist } = useUser();
   if (!destination) return null;
 
-  const isInWishlist = user?.wishlist?.includes(destination.id);
+  const isInWishlist = user?.profile?.wishlist?.includes(destination.id);
 
-  const handleToggleWishlist = () => {
-    toggleWishlist(destination.id);
-    if (!isInWishlist) {
-      toast.success(
-        `${destination.name} added to your wishlist!`,
-      );
-    } else {
-      toast.info(
-        `${destination.name} removed from your wishlist.`,
-      );
-    }
-  };
+
+  const handleToggleWishlist = async (destinationId: string) => {
+  console.log(`Toggling wishlist for ${destinationId} (currently in wishlist: ${isInWishlist})`);
+
+  const email = localStorage.getItem("currentUser");
+  if (!email) return;
+  const res = await fetch(`http://127.0.0.1:8080/add_to_wishlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email, destination_id: destinationId }),
+  });
+
+  const data = await res.json();
+  console.log("Wishlist updated:", data);
+};
 
   const handleBook = () => {
     toast.success(
@@ -222,7 +225,7 @@ export const TourDetailsDialog: React.FC<
         className={`flex-1 h-12 px-2 sm:px-4 text-xs sm:text-sm ${
           isInWishlist ? 'bg-red-500 text-white' : 'border-red-200 text-red-500'
         }`} 
-        onClick={handleToggleWishlist}
+        onClick={() => handleToggleWishlist(destination.id)}
       >
         <Heart className={`mr-1 sm:mr-2 h-4 w-4 shrink-0 ${isInWishlist ? 'fill-current' : ''}`} />
         <span className="truncate">{isInWishlist ? 'Wishlist' : 'Add'}</span>

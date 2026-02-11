@@ -7,7 +7,7 @@ from ..utils import hash_password, verify_password
 
 router = APIRouter()
 
-# ----------------- Tourist Signup -----------------
+## ----------------- Tourist Signup -----------------
 @router.post("/tourist/signup")
 async def tourist_signup(request: TouristSignupRequest):
     existing = await tourists_collection.find_one({"email": request.email})

@@ -29,34 +29,14 @@ function mapApiToDestination(d: ApiDestination): Destination {
     : 'https://images.unsplash.com/photo-1580745372256-9cbe3ebb4f8d?q=80&w=1200&auto=format&fit=crop';
 
   const rawTags = d.tags ?? d.category ?? [];
-  let tagsArray: string[] = [];
-
-  if (Array.isArray(rawTags)) {
-    tagsArray = rawTags.map(tag => String(tag).trim()).filter(Boolean);
-  } else if (rawTags) {
-    const text = String(rawTags).trim();
-
-    // Handle Python-list-like strings: "['a', 'b']"
-    if (text.startsWith('[') && text.endsWith(']')) {
-      try {
-        const jsonLike = text.replace(/'/g, '"');
-        const parsed = JSON.parse(jsonLike);
-        if (Array.isArray(parsed)) {
-          tagsArray = parsed.map((tag: any) => String(tag).trim()).filter(Boolean);
-        }
-      } catch {
-        // Fallback to comma-split below
-      }
-    }
-
-    // Fallback: treat as comma-separated string
-    if (tagsArray.length === 0) {
-      tagsArray = text
+  const tagsArray: string[] = Array.isArray(rawTags)
+    ? rawTags.map(String)
+    : rawTags
+    ? String(rawTags)
         .split(',')
         .map(part => part.trim())
-        .filter(Boolean);
-    }
-  }
+        .filter(Boolean)
+    : [];
 
   return {
     id: d.place_id || d._id,

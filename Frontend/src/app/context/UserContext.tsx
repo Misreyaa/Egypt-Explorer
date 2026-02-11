@@ -164,11 +164,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } as UserProfile,
           };
 
-          localStorage.setItem(`auth_${email}`, password);
-          localStorage.setItem('currentUser', email);
-          localStorage.setItem('user_' + email, JSON.stringify(createdUser));
-          localStorage.setItem('touristId_' + email, backendId);
-
           setUser(createdUser);
         })
         .catch((error: any) => {
@@ -179,7 +174,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
 
-  const signIn = useCallback(
+const signIn = useCallback(
   async (email: string, password: string): Promise<boolean> => {
     try {
       const res = await fetch("http://127.0.0.1:8080/login", {
@@ -200,7 +195,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.access_token) {
         localStorage.setItem("authToken", data.access_token);
         if (data.user) {
-          localStorage.setItem(`user_${email}`, JSON.stringify(data.user));
+          localStorage.setItem("currentUser", email);
           setUser(data.user);
         }
         localStorage.setItem("currentUser", email);
@@ -215,7 +210,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   },
   []
 );
-
 
   const signOut = useCallback(() => {
     localStorage.removeItem('currentUser');

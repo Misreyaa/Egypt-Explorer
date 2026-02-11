@@ -13,7 +13,6 @@
 /yarn.lock
 
 # Environment files
-/.env
 /Frontend/node_modules/
 /RAG/app/__pycache__/
 

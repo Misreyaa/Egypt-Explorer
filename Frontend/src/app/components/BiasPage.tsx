@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -87,7 +87,6 @@ export const BiasPage: React.FC = () => {
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [mockIndex, setMockIndex] = useState(0);
 
   // --- Helpers ---
 
@@ -101,23 +100,77 @@ export const BiasPage: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setSelectedImage(reader.result as string);
-        setInputText("Thinking about the mysterious pyramids and how all Egyptians still live like the ancient times...");
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const simulateAnalysis = () => {
+  // --- New Backend Analysis Function ---
+  const runAnalysis = async () => {
+    const text = inputText.trim();
+    const hasImage = !!selectedImage;
+
     setIsAnalyzing(true);
     setAnalysis(null);
-    
-    // Simulate a brief delay for the "AI feel"
-    setTimeout(() => {
-      setAnalysis(mockOutputs[mockIndex]);
-      // Cycle to the next mock for the next click
-      setMockIndex((prev) => (prev + 1) % mockOutputs.length);
+
+    try {
+      let res: Response;
+      if (hasImage && selectedImage) {
+        // Send multipart: image file + optional text
+        const formData = new FormData();
+        if (text) formData.append('text', text);
+        const blob = await (await fetch(selectedImage)).blob();
+        const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpeg';
+        formData.append('image', blob, `upload.${ext}`);
+
+        res = await fetch('http://127.0.0.1:8080/analyze', {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        // Text-only or empty
+        res = await fetch('http://127.0.0.1:8080/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text || '' }),
+        });
+      }
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('Analyze failed:', res.status, errText);
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const data = await res.json();
+      console.log('Analyze response:', data);
+
+      const biasLevel = typeof data.biasLevel === 'number' ? data.biasLevel : 1;
+      const mappedBiases: DetailedBias[] = (data.biases || []).map((b: { type?: string; note?: string }) => ({
+        type: b.type || 'Bias',
+        note: b.note || '',
+      }));
+
+      setAnalysis({
+        hasBias: data.hasBias ?? mappedBiases.length > 0,
+        biasPercentage: data.biasPercentage ?? 0,
+        biasLevel,
+        biasLabel: data.biasLabel || biasLevelToLabel(biasLevel),
+        summary: data.summary || data.context || '',
+        biases: mappedBiases,
+        context: data.context || '',
+      });
+    } catch (err) {
+      console.error('Analyze request error:', err);
+    } finally {
       setIsAnalyzing(false);
-    }, 800);
+    }
+  };
+
+  const biasLevelToLabel = (level: number) => {
+    const metric = getMetricData(level);
+    return metric?.label || 'Objective';
   };
 
   return (
@@ -141,51 +194,27 @@ export const BiasPage: React.FC = () => {
         )}
       </div>
 
-      {/* 1. METRIC EXPLANATION */}
-      <Card className="mb-8 border-border bg-card">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Analysis Scale</h3>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {metrics.map((m) => (
-              <div key={m.level} className="space-y-1.5 p-2 rounded-lg bg-muted/30 border border-border">
-                <div className={`h-1 w-full rounded-full ${m.color}`} />
-                <p className={`text-[11px] font-bold ${m.text}`}>{m.label}</p>
-                <p className="text-[10px] text-muted-foreground">Lvl {m.level}: {m.range}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Input Section */}
       <Card className="mb-8 border-border shadow-sm bg-card">
         <CardHeader className="pb-4">
           <CardTitle className="text-lg text-foreground">Content Input</CardTitle>
-          <CardDescription>Enter text or upload an image to see the front-end mapping.</CardDescription>
+          <CardDescription>Enter text or upload an image to analyze.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-1 space-y-4">
               <Textarea
-                placeholder="Type something here to test..."
+                placeholder="Type something here..."
                 className="min-h-32 resize-none focus-visible:ring-primary bg-input-background"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
               />
               <Button 
-                onClick={simulateAnalysis} 
-                disabled={!inputText.trim() || isAnalyzing} 
+                onClick={runAnalysis} 
+                disabled={isAnalyzing || (!inputText.trim() && !selectedImage)} 
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all active:scale-[0.98]"
               >
-                {isAnalyzing ? 'Processing AI Models...' : (
-                  <>
-                    <Zap className="mr-2 h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    Analyze for Bias
-                  </>
-                )}
+                {isAnalyzing ? 'Analyzing...' : 'Analyze for Bias'}
               </Button>
             </div>
             
@@ -202,7 +231,6 @@ export const BiasPage: React.FC = () => {
                     >
                       <X className="h-3 w-3" />
                     </Button>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Image Extracted</p>
                   </div>
                 ) : (
                   <label className="cursor-pointer flex flex-col items-center group">
@@ -214,27 +242,17 @@ export const BiasPage: React.FC = () => {
                   </label>
                 )}
               </div>
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 mt-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <ImageIcon className="h-3 w-3 text-primary" />
-                  <span className="text-[10px] font-bold text-primary uppercase">Pro Tip</span>
-                </div>
-                <p className="text-[10px] text-foreground/80 leading-tight">
-                  Take a screenshot of news or social media to see if it contains Orientalist framing.
-                </p>
-              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 2. DYNAMIC OUTPUT SECTION */}
+      {/* Analysis Results */}
       {analysis && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-500">
           <Card className={`overflow-hidden border-border shadow-xl bg-card`}>
-            {/* The Accent Bar */}
+            {/* Accent Bar */}
             <div className={`h-2.5 ${getMetricData(analysis.biasLevel).color} transition-colors duration-500`} />
-            
             <CardHeader className="pb-4">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
@@ -250,17 +268,9 @@ export const BiasPage: React.FC = () => {
                   <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Bias Score</span>
                 </div>
               </div>
-              <div className="pt-4">
-                <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase mb-1.5 px-1">
-                  <span>Objective</span>
-                  <span>Highly Biased</span>
-                </div>
-                <Progress value={analysis.biasPercentage} className="h-3 bg-muted" />
-              </div>
             </CardHeader>
 
             <CardContent className="space-y-6 pt-2">
-              {/* Summary Section */}
               <div className="bg-muted/50 border border-border p-5 rounded-2xl">
                 <div className="flex items-center gap-2 mb-2 text-muted-foreground">
                   <Fingerprint className="h-4 w-4" />
@@ -271,7 +281,6 @@ export const BiasPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Detected Biases List */}
               <div className="space-y-3">
                 <h4 className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest px-1">Specific Indicators</h4>
                 {analysis.biases.length > 0 ? (
@@ -289,14 +298,13 @@ export const BiasPage: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-xl border border-emerald-200 dark:border-emerald-900">
+                  <div className="flex items-center gap-3 p-4 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200">
                     <CheckCircle className="h-5 w-5" />
                     <p className="text-xs font-bold uppercase">No Bias Detected</p>
                   </div>
                 )}
               </div>
 
-              {/* Strategy/Context Box */}
               <div className="bg-primary/10 border border-primary/20 p-5 rounded-2xl flex gap-4">
                 <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                   <Lightbulb className="h-5 w-5 text-primary" />
