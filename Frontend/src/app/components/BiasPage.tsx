@@ -62,15 +62,28 @@ export const BiasPage: React.FC = () => {
     }
   };
 
-  const analyzeText = async (text: string) => {
-    const res = await fetch("http://localhost:8000/analyze", {
+const analyzeText = async (text: string) => {
+  try {
+    const res = await fetch("http://localhost:8080/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
     });
 
-    return await res.json();
-  };
+    if (!res.ok) {
+      console.error("Analyze failed:", res.status, await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    console.log("Analyze API response:", data); // ✅ LOG HERE
+    return data;
+  } catch (err) {
+    console.error("Analyze request error:", err);
+    return null;
+  }
+};
+
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {

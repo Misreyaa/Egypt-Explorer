@@ -1,8 +1,11 @@
+from typing import List
+
 from fastapi import FastAPI, APIRouter, Form, UploadFile, File
 from pydantic import BaseModel
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+import json
 
 load_dotenv()
 
@@ -130,51 +133,38 @@ If no meaningful bias:
 "biases": []
 explain briefly in "summary"""
 
-class TextRequest(BaseModel):
+
+class AnalyzeRequest(BaseModel):
     text: str
 
+class BiasItem(BaseModel):
+    type: str
+    note: str
 
-@router.post("/analyze")
-async def analyze_bias(text: str = Form(None), image: UploadFile = File(None)):
+class BiasResponse(BaseModel):
+    hasBias: bool
+    biasPercentage: int
+    biasLevel: int
+    biasLabel: str
+    summary: str
+    biases: List[BiasItem]
+    context: str
 
-    # 1️⃣ If image exists → extract text using GPT vision
-    if image:
-        img_bytes = await image.read()
 
-        vision = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Extract all readable text from this image only."},
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_bytes.encode('base64')}"}}
-                ],
-            }],
-            temperature=0,
-        )
+@router.post("/analyze", response_model=BiasResponse)
+async def analyze_bias(req: AnalyzeRequest):
+    text = req.text
 
-        text = vision.choices[0].message.content
-
-    # 2️⃣ If still no text → return safe response
-    if not text:
-        return {
-            "hasBias": False,
-            "biasPercentage": 0,
-            "biasLevel": 1,
-            "biasLabel": "Objective",
-            "summary": "No relevant statement to analyze.",
-            "biases": [],
-            "context": ""
-        }
-
-    # 3️⃣ Send text to bias detector prompt
-    bias = client.chat.completions.create(
+    completion = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": text},
         ],
         temperature=0,
+        response_format={"type": "json_object"}  # 🔥 FORCE JSON
     )
 
-    return bias.choices[0].message.content
+    raw = completion.choices[0].message.content
+    parsed = json.loads(raw)
+    return parsed
