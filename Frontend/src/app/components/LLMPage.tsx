@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { MessageSquare, Send, Bot, User } from 'lucide-react';
+import { askRag, healthCheck, login, PlaceSummary } from '../api/rag';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,16 +13,12 @@ interface Message {
   timestamp: Date;
 }
 
-const sampleResponses = [
-  "That's a great question about Egypt! Based on your interests, I'd recommend...",
-  "Egyptian culture is rich and diverse. Let me share some insights...",
-  "The best time to visit depends on what you want to experience. Summer can be hot, but...",
-  "Ancient Egyptian history spans over 3000 years. Here are the key periods you should know...",
-  "For authentic Egyptian cuisine, you must try koshari, ful medames, and ta'ameya...",
-];
+interface AssistantMessage extends Message {
+  places?: PlaceSummary[] | null;
+}
 
 export const LLMPage: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<(Message | AssistantMessage)[]>([
     {
       role: 'assistant',
       content: "Hello! I'm your Egyptian culture assistant. Ask me anything about Egypt - from travel tips to historical facts, cultural customs, or recommendations for your trip!",
@@ -30,9 +27,29 @@ export const LLMPage: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkBackend = async () => {
+      const ok = await healthCheck();
+      if (!cancelled) {
+        setBackendOnline(ok);
+      }
+    };
+
+    checkBackend();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSend = async () => {
+    if (!input.trim() || isTyping) return;
 
     const userMessage: Message = {
       role: 'user',
@@ -43,18 +60,47 @@ export const LLMPage: React.FC = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
+    setError(null);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const randomResponse = sampleResponses[Math.floor(Math.random() * sampleResponses.length)];
+    try {
+      let currentToken = token ?? localStorage.getItem('ragToken');
+      if (!currentToken) {
+        currentToken = await login();
+        setToken(currentToken);
+        localStorage.setItem('ragToken', currentToken);
+      }
+
+      const answer = await askRag(currentToken, {
+        query: userMessage.content,
+        limit: 5,
+      });
+
+      const assistantMessage: AssistantMessage = {
+        role: 'assistant',
+        content: answer.response,
+        timestamp: new Date(),
+        places: answer.places ?? null,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err: any) {
+      const message =
+        typeof err?.message === 'string'
+          ? err.message
+          : 'Something went wrong while contacting the assistant.';
+      setError(message);
+
       const assistantMessage: Message = {
         role: 'assistant',
-        content: randomResponse,
+        content:
+          'Sorry, I could not reach the assistant right now. Please try again in a moment.',
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, assistantMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -85,8 +131,18 @@ export const LLMPage: React.FC = () => {
             Egypt Culture Assistant
           </CardTitle>
           <CardDescription>
-            Note: This is a simulated assistant. In a production app, this would connect to a real AI model.
+            Ask anything about Egypt and travel. This chat is connected to your FastAPI RAG backend.
           </CardDescription>
+          {backendOnline === false && (
+            <p className="text-xs text-red-500 mt-1">
+              Backend is not reachable. Please make sure the FastAPI server is running.
+            </p>
+          )}
+          {backendOnline && (
+            <p className="text-xs text-emerald-600 mt-1">
+              Connected to backend.
+            </p>
+          )}
         </CardHeader>
         
         <ScrollArea className="flex-1 p-4">
@@ -157,6 +213,11 @@ export const LLMPage: React.FC = () => {
               <Send className="h-4 w-4" />
             </Button>
           </div>
+          {error && (
+            <p className="text-xs text-red-500 mt-2">
+              {error}
+            </p>
+          )}
         </CardContent>
       </Card>
 

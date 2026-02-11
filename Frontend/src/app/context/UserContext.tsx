@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:8080';
+
 export interface VehicleInfo {
   vehicle_type: string;
   license_plate: string;
@@ -85,7 +87,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (userData) {
           const parsedUser = JSON.parse(userData);
           setUser(parsedUser);
-          
+
           // Apply RTL for Arabic (only for tourists)
           if (parsedUser.userType === 'tourist' && parsedUser.profile.appLanguage === 'Arabic') {
             document.documentElement.setAttribute('dir', 'rtl');
@@ -127,7 +129,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Signing up user:', { email, user });
         console.log('User profile details:', user.profile);
         // Send user data to your backend API
-        const response = await axios.post('http://127.0.0.1:8000/tourist/signup', {
+        const response = await axios.post(`${API_BASE}/tourist/signup`, {
           email,
           password, // backend should hash this
           profile: user,
@@ -178,7 +180,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (currentUser) {
       localStorage.setItem(`user_${currentUser}`, JSON.stringify(user));
       setUser(user);
-      
+
       // Apply RTL for Arabic (only for tourists)
       if (user.userType === 'tourist' && user.profile.appLanguage === 'Arabic') {
         document.documentElement.setAttribute('dir', 'rtl');
@@ -192,21 +194,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const toggleWishlist = useCallback((tourId: string) => {
     if (!user || user.userType !== 'tourist') return;
-    
+
     const wishlist = user.profile.wishlist || [];
     const isAlreadyInWishlist = wishlist.includes(tourId);
-    
+
     const newWishlist = isAlreadyInWishlist
       ? wishlist.filter(id => id !== tourId)
       : [...wishlist, tourId];
-      
+
     const updatedProfile = { ...user.profile, wishlist: newWishlist };
     updateProfile({ ...user, profile: updatedProfile });
   }, [user, updateProfile]);
 
   const markRulesAsSeen = useCallback(() => {
     if (!user) return;
-    
+
     if (user.userType === 'local') {
       const updatedProfile = { ...user.profile, hasSeenRules: true };
       updateProfile({ ...user, profile: updatedProfile });
@@ -214,13 +216,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, updateProfile]);
 
   return (
-    <UserContext.Provider value={{ 
-      user, 
-      theme, 
-      toggleTheme, 
-      signIn, 
-      signUp, 
-      signOut, 
+    <UserContext.Provider value={{
+      user,
+      theme,
+      toggleTheme,
+      signIn,
+      signUp,
+      signOut,
       updateProfile,
       toggleWishlist,
       markRulesAsSeen
