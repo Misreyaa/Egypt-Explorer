@@ -539,3 +539,4 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
     )
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8080)
+

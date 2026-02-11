@@ -1,11 +1,18 @@
 import ast
+import os
 
 import pandas as pd
 from pymongo import MongoClient
 
 EXCEL_PATH = "data/Locations.xlsx"
-MONGODB_URI = "mongodb://localhost:27017"
-MONGODB_DB = "egyreal"
+
+# Use the same env-based configuration as the backend.
+# Defaults to cloud MongoDB Atlas cluster (can override via MONGODB_URI env var)
+MONGODB_URI = os.getenv(
+    "MONGODB_URI",
+    "mongodb+srv://mariamelkondakly88_db_user:VXNPTFlECyywG3F5@cluster0.byznfgr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+)
+MONGODB_DB = os.getenv("MONGODB_DB", "egyreal")
 
 client = MongoClient(MONGODB_URI)
 db = client[MONGODB_DB]

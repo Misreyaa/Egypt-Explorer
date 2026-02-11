@@ -10,9 +10,9 @@ router = APIRouter()
 # ----------------- Signup -----------------
 @router.post("/signup")
 async def signup(tourist: TouristSignupRequest):
-    existing = await tourists_collection.find_one({"username": tourist.username})
+    existing = await tourists_collection.find_one({"email": tourist.email})
     if existing:
-        raise HTTPException(status_code=400, detail="Username already taken")
+        raise HTTPException(status_code=400, detail="email already used")
 
     tourist_dict = tourist.dict()
     tourist_dict["password"] = hash_password(tourist_dict["password"])
@@ -22,11 +22,11 @@ async def signup(tourist: TouristSignupRequest):
 # ----------------- Login -----------------
 @router.post("/login")
 async def login(data: LoginRequest):
-    user = await tourists_collection.find_one({"username": data.username})
+    user = await tourists_collection.find_one({"email": data.email})
     if not user or not verify_password(data.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    access_token = create_access_token({"sub": user["username"]})
+    access_token = create_access_token({"sub": user["email"]})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.put("/{username}")

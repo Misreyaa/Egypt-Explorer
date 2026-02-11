@@ -5,17 +5,24 @@ from motor.motor_asyncio import AsyncIOMotorClient
 # NOTE:
 # - Do NOT hardcode credentials in source code.
 # - Provide your Mongo connection string via environment variables.
-#
-# Examples:
-#   MONGODB_URI=mongodb://localhost:27017
-#   MONGODB_DB=egyreal
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+#   e.g. for Atlas:
+#   MONGODB_URI="mongodb+srv://user:pass@cluster0.byznfgr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+#   MONGODB_DB="egyreal"
+
+EXCEL_PATH = "data/Locations.xlsx"
+
+# Use env vars, defaulting to cloud MongoDB Atlas cluster
+MONGODB_URI = os.getenv(
+    "MONGODB_URI",
+    "mongodb+srv://mariamelkondakly88_db_user:VXNPTFlECyywG3F5@cluster0.byznfgr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+)
 MONGODB_DB = os.getenv("MONGODB_DB", "egyreal")
 
-client = AsyncIOMotorClient(MONGODB_URI)
+# Async Motor client ("mongo await" style)
+client: AsyncIOMotorClient = AsyncIOMotorClient(MONGODB_URI)
 db = client[MONGODB_DB]
 
-# Collections
+# Collections (async Motor collections; use `await` on operations, not on `db` itself)
 destinations_collection = db["destinations"]
 tourists_collection = db["tourists"]
 locals_collection = db["locals"]

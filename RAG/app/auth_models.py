@@ -9,10 +9,10 @@ class TouristSignupRequest(BaseModel):
     country: Optional[str] = None
     languages: List[str] = []
     currency: Optional[str] = None
-    app_language: Optional[str] = "English"
-    travel_type: Optional[str] = "solo"
+    appLanguage: Optional[str] = "English"
+    travelType: Optional[str] = "solo"
     activities: List[str] = []
-    avatar_url: Optional[str] = None
+    avatarUrl: Optional[str] = None
     bio: Optional[str] = None
 
 class LocalSignupRequest(BaseModel):

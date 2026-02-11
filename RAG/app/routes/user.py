@@ -17,7 +17,7 @@ async def tourist_signup(request: TouristSignupRequest):
     print(user_dict["password"])
     # user_dict["password"] = hash_password(user_dict["password"])
     result = await tourists_collection.insert_one(user_dict)
-    return {"id": str(result.inserted_id)}
+    return {"id": str(result)}
 
 # ----------------- Local Signup -----------------
 @router.post("/local/signup")

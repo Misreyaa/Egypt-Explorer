@@ -122,10 +122,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   const signUp = useCallback(
-  async (user: User, email: string, password: string) => {
-    try {
-      if (user.userType !== "tourist") {
-        throw new Error("Only tourist signup supported for now");
+    (user: User, email: string, password: string) => {
+      if (user.userType !== 'tourist') {
+        console.error('Only tourist signup supported for now');
+        return;
       }
 
       const profile = user.profile;
@@ -138,37 +138,45 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         country: profile.country,
         languages: profile.languages,
         currency: profile.currency,
-        app_language: profile.appLanguage,
-        travel_type: profile.travelType,
+        appLanguage: profile.appLanguage,
+        travelType: profile.travelType,
         activities: profile.activities,
-        avatar_url: profile.avatarUrl || "",
-        bio: ""
+        avatarUrl: profile.avatarUrl || '',
+        bio: '',
       };
 
-      console.log("SIGNUP PAYLOAD:", payload);
+      console.log('SIGNUP PAYLOAD:', payload);
 
-      const response = await axios.post(
-        "http://127.0.0.1:8080/tourists/signup",
-        payload,
-        { headers: { "Content-Type": "application/json" } }
-      );
+      // Fire-and-forget: no await, just handle result in then/catch
+      axios
+        .post<{ id: string }>(
+          'http://127.0.0.1:8080/tourists/signup',
+          payload,
+          { headers: { 'Content-Type': 'application/json' } }
+        )
+        .then((response) => {
+          const backendId = response.data.id;
 
-      const { token, user: createdUser } = response.data;
+          const createdUser: User = {
+            userType: 'tourist',
+            profile: {
+              ...profile,
+            } as UserProfile,
+          };
 
-      localStorage.setItem("authToken", token);
-      localStorage.setItem("currentUser", email);
-      localStorage.setItem("user_" + email, JSON.stringify(createdUser));
+          localStorage.setItem(`auth_${email}`, password);
+          localStorage.setItem('currentUser', email);
+          localStorage.setItem('user_' + email, JSON.stringify(createdUser));
+          localStorage.setItem('touristId_' + email, backendId);
 
-      setUser(createdUser);
-
-      return createdUser;
-    } catch (error: any) {
-      console.error("Sign up failed:", error.response?.data || error.message);
-      throw error;
-    }
-  },
-  []
-);
+          setUser(createdUser);
+        })
+        .catch((error: any) => {
+          console.error('Sign up failed:', error.response?.data || error.message);
+        });
+    },
+    []
+  );
 
 
 
