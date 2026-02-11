@@ -24,15 +24,12 @@ import { MatchWithLocalPage } from './components/MatchWithLocalPage';
 import { BiasPromoBubble } from './components/BiasPromoBubble';
 import { Toaster } from 'sonner';
 
-import { BiasedSplashScreen } from './components/BiasedSplashScreen';
-
 function AppContent() {
   const { user } = useUser();
   const [showSignUp, setShowSignUp] = useState(false);
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedLesson, setSelectedLesson] = useState<LessonItem | null>(null);
   const [showLocalRules, setShowLocalRules] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     // Show local rules popup if user is local and hasn't seen it
@@ -43,28 +40,14 @@ function AppContent() {
 
   const handlePageChange = (page: string) => {
     if (page === currentPage) return;
-    
-    // Trigger splash screen
-    setIsTransitioning(true);
-    
-    // Wait for reading time then switch
-    setTimeout(() => {
-      setCurrentPage(page);
-      setIsTransitioning(false);
-    }, 4000); // 4 seconds to read the text
+    setCurrentPage(page);
   };
 
   if (!user) {
     if (showSignUp) {
       return (
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background">Loading...</div>}>
-          <SignUpWrapper onComplete={() => {
-            setShowSignUp(false);
-            // Trigger splash on signup completion (implicit transition to home)
-            setIsTransitioning(true);
-            setTimeout(() => setIsTransitioning(false), 4000);
-          }} />
-          <BiasedSplashScreen isVisible={isTransitioning} onDismiss={() => setIsTransitioning(false)} />
+          <SignUpWrapper onComplete={() => setShowSignUp(false)} />
         </Suspense>
       );
     }
@@ -139,12 +122,6 @@ function AppContent() {
         </Suspense>
       </main>
       <BiasPromoBubble currentPage={currentPage} onNavigate={handlePageChange} />
-      <BiasedSplashScreen isVisible={isTransitioning} onDismiss={(navigateToBias) => {
-        setIsTransitioning(false);
-        if (navigateToBias) {
-          setCurrentPage('bias');
-        }
-      }} />
       <Toaster position="top-center" expand={false} richColors />
       {showLocalRules && <LocalRulesPopup open={showLocalRules} onClose={() => setShowLocalRules(false)} />}
     </div>
