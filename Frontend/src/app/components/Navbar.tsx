@@ -64,10 +64,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-brown-medium/20 bg-brown-dark shadow-md">
-      <div className="container flex h-16 items-center px-4">
+      <div className="w-full max-w-[100vw] mx-auto flex h-16 items-center px-4 overflow-x-hidden">
         {/* Logo */}
         <div 
-          className="flex items-center gap-2 cursor-pointer" 
+          className="flex items-center gap-2 cursor-pointer shrink-0" 
           onClick={() => handleNavigate('home')}
         >
           <div className="h-10 w-10 bg-gradient-to-br from-pine-primary to-pine-dark rounded-full flex items-center justify-center shadow-lg">
@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
         </div>
 
         {/* Desktop Navigation - Centered */}
-        <div className="hidden lg:flex flex-1 items-center justify-center gap-1 mx-4">
+        <div className="hidden lg:flex flex-1 items-center justify-center gap-1 mx-4 overflow-x-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -88,21 +88,23 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                 variant={currentPage === item.id ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => handleNavigate(item.id)}
-                className={`flex items-center gap-2 ${
+                className={`group flex items-center shrink-0 ${
                   currentPage === item.id 
                     ? 'bg-pine-primary hover:bg-pine-dark text-white shadow-sm' 
                     : 'text-papyrus hover:bg-brown-light/40 hover:text-papyrus-light transition-colors'
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                <span className="hidden xl:inline">{item.label}</span>
+                <span className="max-w-0 opacity-0 ml-0 overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out group-hover:max-w-[300px] group-hover:opacity-100 group-hover:ml-2">
+                  {item.label}
+                </span>
               </Button>
             );
           })}
         </div>
 
         {/* Right Actions - Rightmost */}
-        <div className="flex items-center gap-2 sm:gap-4 ml-auto lg:ml-0">
+        <div className="flex items-center gap-2 sm:gap-4 ml-auto lg:ml-0 shrink-0">
           {/* Mobile Menu Button */}
           <div className="lg:hidden">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
