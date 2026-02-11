@@ -1,3 +1,5 @@
+import re
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.models import QueryRequest, QueryResponse, PlaceSummary
@@ -17,6 +19,35 @@ def _is_missing_value(value) -> bool:
     return False
 
 
+def _parse_time_range_from_query(query: str) -> tuple[int, int] | None:
+    """
+    Very simple time-range extractor for queries like:
+    - "open from 8 to 17"
+    - "open between 10 and 22"
+
+    We look for 2 integers in the range [0, 23] and interpret them as 24‑hour
+    clock hours, then convert to minutes.
+    """
+    numbers = [int(m.group()) for m in re.finditer(r"\d{1,2}", query)]
+    numbers = [n for n in numbers if 0 <= n <= 23]
+    if len(numbers) < 2:
+        return None
+
+    start_hour = min(numbers[0], numbers[1])
+    end_hour = max(numbers[0], numbers[1])
+
+    start_minutes = start_hour * 60
+    end_minutes = end_hour * 60
+    return start_minutes, end_minutes
+
+
+def _format_hour(minutes: int) -> str:
+    """Format minutes since midnight into a simple HH:MM string."""
+    h = minutes // 60
+    m = minutes % 60
+    return f"{h:02d}:{m:02d}"
+
+
 def _detect_fact_field(query: str) -> str | None:
     """
     Detect whether the query is asking for a structured "fact" field
@@ -27,6 +58,17 @@ def _detect_fact_field(query: str) -> str | None:
     fee_keywords = {"fee", "fees", "ticket", "tickets", "price", "cost", "entry fee", "admission"}
     hours_keywords = {"hours", "opening", "open", "closing", "close", "time", "times", "visiting"}
     duration_keywords = {"duration", "how long", "visit duration", "average visit"}
+    safety_keywords = {"safety", "safe", "dangerous", "security"}
+    tips_keywords = {"tips", "tricks", "local tips", "advice", "recommendations"}
+    dress_keywords = {
+        "dress code",
+        "dress",
+        "wear",
+        "what to wear",
+        "clothes",
+        "clothing",
+        "attire",
+    }
 
     if any(k in q for k in fee_keywords):
         return "entry_fee"
@@ -34,6 +76,12 @@ def _detect_fact_field(query: str) -> str | None:
         return "opening_hours"
     if any(k in q for k in duration_keywords):
         return "average_visit_duration"
+    if any(k in q for k in safety_keywords):
+        return "safety_notes"
+    if any(k in q for k in tips_keywords):
+        return "local_tips"
+    if any(k in q for k in dress_keywords):
+        return "dress_code"
 
     return None
 
@@ -49,6 +97,7 @@ def _extract_place_hint(query: str) -> str:
         "fee", "fees", "ticket", "tickets", "price", "cost", "admission",
         "opening", "open", "closing", "close", "hours", "hour", "time", "times",
         "visiting", "visit", "duration", "how", "long",
+        "dress", "code", "wear", "clothes", "clothing", "attire",
     ]:
         q = q.replace(token, " ")
     return " ".join(q.split()).strip()
@@ -121,6 +170,30 @@ def _pick_place_id_from_qdrant_results(query: str, results) -> str | None:
 
     return best_pid
 
+
+def _looks_like_activity_intent(query: str) -> bool:
+    """
+    Heuristic check for activity-oriented queries.
+    """
+    q = query.lower()
+    activity_keywords = [
+        "activity",
+        "activities",
+        "things to do",
+        "i love",
+        "i like",
+        "i want to do",
+        "adventure",
+        "hiking",
+        "water",
+        "snorkel",
+        "snorkeling",
+        "diving",
+        "swim",
+        "photography",
+    ]
+    return any(k in q for k in activity_keywords)
+
 # -----------------------------
 # FastAPI App Initialization
 # -----------------------------
@@ -130,16 +203,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-<<<<<<< Updated upstream
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
-=======
-@app.get("/")
-def root():
-    return {"status": "API is running"}
->>>>>>> Stashed changes
 
 # -----------------------------
 # Token Endpoint for Login
@@ -173,6 +240,89 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
     """
     Query RAG endpoint. Requires authentication.
     """
+    # 0) Time-range intent: "open between X and Y" → Mongo numeric filter on open/close minutes.
+    time_range = _parse_time_range_from_query(req.query)
+    if time_range is not None:
+        user_start, user_end = time_range
+
+        # A place is considered available if its open/close window overlaps
+        # the requested window at all.
+        mongo_filter: dict = {
+            "open_minutes": {"$lte": user_end},
+            "close_minutes": {"$gte": user_start},
+        }
+        if req.city:
+            mongo_filter["city"] = {"$regex": f"^{req.city.strip()}$", "$options": "i"}
+        if req.category:
+            mongo_filter["category"] = {"$regex": f"^{req.category.strip()}$", "$options": "i"}
+        if req.wheelchair_only:
+            mongo_filter["is_wheelchair_accessible"] = True
+
+        docs = await destinations_collection.find(mongo_filter).to_list(length=50)
+
+        if not docs:
+            response_text = (
+                "No places were found that are open between "
+                f"{_format_hour(user_start)} and {_format_hour(user_end)} "
+                "for the requested constraints."
+            )
+            return QueryResponse(
+                response=response_text,
+                sources=[],
+                confidence=None,
+                matched_filters={
+                    "city": req.city,
+                    "category": req.category,
+                    "wheelchair_only": req.wheelchair_only,
+                },
+                places=[],
+            )
+
+        # Format a deterministic list-style response; no LLM involved.
+        lines = [
+            f"The following places are open between {_format_hour(user_start)} and {_format_hour(user_end)}:",
+        ]
+        places: list[PlaceSummary] = []
+        for d in docs:
+            name = d.get("name") or "Unnamed place"
+            city = d.get("city")
+            category = d.get("category")
+            pid = str(d.get("place_id") or "")
+
+            open_m = d.get("open_minutes")
+            close_m = d.get("close_minutes")
+            if isinstance(open_m, int) and isinstance(close_m, int):
+                hours_str = f"{_format_hour(open_m)}–{_format_hour(close_m)}"
+            else:
+                hours_str = "hours not specified"
+
+            if city:
+                lines.append(f"- {name} ({city}) — {hours_str}")
+            else:
+                lines.append(f"- {name} — {hours_str}")
+
+            if pid:
+                places.append(
+                    PlaceSummary(
+                        place_id=pid,
+                        name=name,
+                        category=category,
+                        city=city,
+                    )
+                )
+
+        return QueryResponse(
+            response="\n".join(lines),
+            sources=[],
+            confidence=None,
+            matched_filters={
+                "city": req.city,
+                "category": req.category,
+                "wheelchair_only": req.wheelchair_only,
+            },
+            places=places,
+        )
+
     # 1) Intent routing: structured fact questions should be answered directly from MongoDB.
     fact_field = _detect_fact_field(req.query)
     if fact_field:
@@ -187,6 +337,7 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
                 wheelchair_only=req.wheelchair_only,
                 city=req.city,
                 category=req.category,
+                chunk_type="description",
             )
             pid = _pick_place_id_from_qdrant_results(req.query, id_results)
             if pid:
@@ -205,6 +356,12 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
                     response_text = f"The opening hours for {place_name} are: {value}"
                 elif fact_field == "average_visit_duration":
                     response_text = f"The average visit duration for {place_name} is: {value}"
+                elif fact_field == "dress_code":
+                    response_text = f"The dress code for {place_name} is: {value}"
+                elif fact_field == "safety_notes":
+                    response_text = f"Safety notes for {place_name}: {value}"
+                elif fact_field == "local_tips":
+                    response_text = f"Local tips for {place_name}: {value}"
                 else:
                     response_text = f"{fact_field.replace('_', ' ').title()} for {place_name}: {value}"
 
@@ -228,16 +385,39 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
                 places=[place_summary] if place_id else [],
             )
 
+    # 2) Activity‑focused vs general description search
+    chunk_type = "activity" if _looks_like_activity_intent(req.query) else "description"
+
     results = retrieve(
         req.query,
         top_k=req.limit,
         wheelchair_only=req.wheelchair_only,
         city=req.city,
         category=req.category,
+        chunk_type=chunk_type,
     )
 
     # Guardrail: if filters eliminate everything, be honest instead of fabricating
     if not results:
+        # Special honesty for water‑activity queries with no supporting data.
+        if chunk_type == "activity" and "water" in req.query.lower():
+            no_water_msg = (
+                "No strong water-based activities were found in this dataset for the given filters. "
+                "You may want to consider coastal destinations such as Hurghada or Sharm El Sheikh, "
+                "which are better known for water activities."
+            )
+            return QueryResponse(
+                response=no_water_msg,
+                sources=[],
+                confidence=None,
+                matched_filters={
+                    "city": req.city,
+                    "category": req.category,
+                    "wheelchair_only": req.wheelchair_only,
+                },
+                places=[],
+            )
+
         return QueryResponse(
             response=(
                 "No matching places were found that satisfy the requested constraints "
@@ -252,6 +432,31 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
             },
             places=[],
         )
+
+    # If user asked about water activities but none of the retrieved activity chunks
+    # actually mention water, be explicit instead of hallucinating.
+    if chunk_type == "activity" and "water" in req.query.lower():
+        has_water_activity = any(
+            "water" in str(getattr(r, "payload", {}).get("text", "")).lower()
+            for r in results
+        )
+        if not has_water_activity:
+            no_water_msg = (
+                "No strong water-based activities were found in this dataset for the given filters. "
+                "You may want to consider coastal destinations such as Hurghada or Sharm El Sheikh, "
+                "which are better known for water activities."
+            )
+            return QueryResponse(
+                response=no_water_msg,
+                sources=[],
+                confidence=None,
+                matched_filters={
+                    "city": req.city,
+                    "category": req.category,
+                    "wheelchair_only": req.wheelchair_only,
+                },
+                places=[],
+            )
 
     context = build_context(results)
 
