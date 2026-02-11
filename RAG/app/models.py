@@ -1,5 +1,4 @@
 from typing import Optional, List
-
 from pydantic import BaseModel
 
 
@@ -41,9 +40,11 @@ class IngestionResponse(BaseModel):
     collection_name: str
     message: str
 
+
 class Location(BaseModel):
     lat: float
     lng: float
+
 
 class Destination(BaseModel):
     name: str
@@ -72,34 +73,25 @@ class Destination(BaseModel):
     image_path: Optional[str]
 
 
-
 class Tourist(BaseModel):
+    name: str
     username: str
     email: str
     password_hash: str
-    preferences: List[str] = []          # match with destinations' tags
-    visited: List[str] = []              # place_ids
-    favorites: List[str] = []            # place_ids
-    languages: List[str] = []            # e.g., ["Arabic", "English"]
-    bio: Optional[str] = None            # short introduction
-    profile_picture: Optional[str] = None  # URL to profile picture
+    languages: List[str] = []         # frontend single language wrapped as list
+    preferences: List[str] = []       # frontend activities
+    visited: List[str] = []
+    favorites: List[str] = []
+    bio: Optional[str] = None
+    profile_picture: Optional[str] = None  # avatarUrl from frontend
     posts: List[str] = []
-
-
-class Comment(BaseModel):
-    author_id: str             # tourist_id or local_id
-    author_type: str           # "tourist" or "local"
-    content: str
-    timestamp: Optional[str] = None
-
-class Post(BaseModel):
-    post_id: str
-    author_id: str             # local_id (who created the post)
-    title: Optional[str] = None
-    content: str
-    tags: List[str] = []       # optional tags for filtering/searching
-    timestamp: Optional[str] = None
-    comments: List[Comment] = []  # comments on this post
+    national_id: str
+    verified: bool = False
+    age: Optional[int] = None
+    country: Optional[str] = None
+    currency: Optional[str] = None
+    app_language: Optional[str] = "English"
+    travel_type: Optional[str] = "solo"  # "solo" | "group" | "family"
 
 
 class Local(BaseModel):
@@ -107,37 +99,52 @@ class Local(BaseModel):
     email: str
     phone: Optional[str]
     city: str
-    languages: List[str] = []  # e.g., ["Arabic", "English"]
-    occupation: str  # "shopkeeper", "driver", "volunteer guide"
-
-    # Only for shopkeepers/drivers
+    languages: List[str] = []
+    occupation: str
     vehicle_or_shop_id: Optional[str] = None
+    posts: List[str] = []
+    rating: Optional[float] = None
+    reviews: List[str] = []
+    bio: Optional[str] = None
+    profile_picture: Optional[str] = None
 
-    posts: List[str] = []  # IDs of posts in locals advice group
-    rating: Optional[float] = None  # average rating
-    reviews: List[str] = []  # tourist reviews
-    bio: Optional[str] = None  # short bio / intro
-    profile_picture: Optional[str] = None  # URL to profile picture
+
+class Comment(BaseModel):
+    author_id: str
+    author_type: str  # "tourist" or "local"
+    content: str
+    timestamp: Optional[str] = None
+
+
+class Post(BaseModel):
+    post_id: str
+    author_id: str
+    title: Optional[str] = None
+    content: str
+    tags: List[str] = []
+    timestamp: Optional[str] = None
+    comments: List[Comment] = []
+
 
 class Shop(BaseModel):
     shop_id: str
-    owner_id: str            # local_id of the shopkeeper
+    owner_id: str
     name: str
     city: str
     address: Optional[str] = None
     phone: Optional[str] = None
     description: Optional[str] = None
     opening_hours: Optional[str] = None
-    categories: Optional[list[str]] = []   # e.g., ["souvenir", "food"]
-    rating: Optional[float] = None         # average rating from tourists
+    categories: Optional[list[str]] = []
+    rating: Optional[float] = None
+
 
 class Vehicle(BaseModel):
     vehicle_id: str
-    owner_id: str            # local_id of the driver
-    type: str                # e.g., "car", "van", "bus"
+    owner_id: str
+    type: str
     license_plate: str
     city: str
     capacity: Optional[int] = None
     description: Optional[str] = None
-    rating: Optional[float] = None        # average rating from tourists
-
+    rating: Optional[float] = None

@@ -130,10 +130,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
+<<<<<<< Updated upstream
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
+=======
+@app.get("/")
+def root():
+    return {"status": "API is running"}
+>>>>>>> Stashed changes
 
 # -----------------------------
 # Token Endpoint for Login

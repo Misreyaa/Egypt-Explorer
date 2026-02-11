@@ -29,7 +29,7 @@ export const TravelCard: React.FC<TravelCardProps> = ({
   onViewDetails 
 }) => {
   return (
-    <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-papyrus border-papyrus-dark">
+    <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-card border-border">
       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden">
         <ImageWithFallback
           src={destination.imageUrl}
@@ -37,14 +37,14 @@ export const TravelCard: React.FC<TravelCardProps> = ({
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <div className="absolute top-3 right-3 flex items-center gap-1 bg-amber-900/90 backdrop-blur-sm px-3 py-1.5 rounded-full">
+        <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-full">
           <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-          <span className="text-sm font-semibold text-amber-50">{destination.rating}</span>
+          <span className="text-sm font-semibold text-white">{destination.rating}</span>
         </div>
       </div>
       
       <CardHeader className="space-y-3 pb-3">
-        <CardTitle className="text-lg sm:text-xl line-clamp-2 text-brown-dark">
+        <CardTitle className="text-lg sm:text-xl line-clamp-2 text-foreground">
           {destination.name}
         </CardTitle>
         <div className="flex flex-wrap gap-1.5">
@@ -52,11 +52,7 @@ export const TravelCard: React.FC<TravelCardProps> = ({
             <Badge
               key={cat}
               variant={userActivities.includes(cat) ? 'default' : 'secondary'}
-              className={`text-xs ${
-                userActivities.includes(cat) 
-                  ? 'bg-pine-primary text-white hover:bg-pine-dark' 
-                  : 'bg-papyrus-dark text-brown-medium hover:bg-papyrus-darker'
-              }`}
+              className="text-xs"
             >
               {cat}
             </Badge>
@@ -65,16 +61,16 @@ export const TravelCard: React.FC<TravelCardProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-3 pb-4">
-        <CardDescription className="text-sm sm:text-base line-clamp-3 text-brown-medium">
+        <CardDescription className="text-sm sm:text-base line-clamp-3 text-muted-foreground">
           {destination.description}
         </CardDescription>
-        <div className="flex flex-col gap-2 text-sm text-brown-medium">
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 flex-shrink-0 text-pine-primary" />
+            <Clock className="h-4 w-4 flex-shrink-0 text-primary" />
             <span>{destination.duration}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 flex-shrink-0 text-pine-primary" />
+            <Users className="h-4 w-4 flex-shrink-0 text-primary" />
             <span>{destination.groupSize}</span>
           </div>
         </div>
@@ -82,7 +78,7 @@ export const TravelCard: React.FC<TravelCardProps> = ({
       
       <CardFooter className="pt-0">
         <Button 
-          className="w-full bg-pine-primary hover:bg-pine-dark text-white transition-colors"
+          className="w-full transition-colors"
           onClick={() => onViewDetails?.(destination.id)}
         >
           <MapPin className="mr-2 h-4 w-4" />

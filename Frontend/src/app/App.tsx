@@ -1,36 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
 import { UserProvider, useUser } from './context/UserContext';
-import { SignUpPage } from './components/SignUpPage';
+import { SignUpWrapper } from './components/SignUpWrapper';
 import { SignInPage } from './components/SignInPage';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './components/HomePage';
-import { StreetsPage } from './components/StreetsPage';
+import { LocalHomePage } from './components/LocalHomePage';
+import { RecommendationsPage } from './components/RecommendationsPage';
 import { LessonsPage } from './components/LessonsPage';
 import { BiasPage } from './components/BiasPage';
 import { LLMPage } from './components/LLMPage';
 import { EgyRealPage } from './components/EgyRealPage';
 import { HelpPage } from './components/HelpPage';
+import { UserProfilePage } from './components/UserProfilePage';
+import { ComfortZonePage } from './components/ComfortZonePage';
+import { WishlistPage } from './components/WishlistPage';
+import { LessonDetailPage } from './components/LessonDetailPage';
+import { LessonItem } from './components/LessonsPage';
+import { LocalBlogPage } from './components/LocalBlogPage';
+import { HiddenGemForm } from './components/HiddenGemForm';
+import { NotificationsPage } from './components/NotificationsPage';
+import { LocalRulesPopup } from './components/LocalRulesPopup';
+import { MatchWithLocalPage } from './components/MatchWithLocalPage';
+import { Toaster } from 'sonner';
 
 function AppContent() {
   const { user } = useUser();
   const [showSignUp, setShowSignUp] = useState(false);
   const [currentPage, setCurrentPage] = useState('home');
+  const [selectedLesson, setSelectedLesson] = useState<LessonItem | null>(null);
+  const [showLocalRules, setShowLocalRules] = useState(false);
+
+  useEffect(() => {
+    // Show local rules popup if user is local and hasn't seen it
+    if (user?.userType === 'local' && !(user.profile as any).hasSeenRules) {
+      setShowLocalRules(true);
+    }
+  }, [user]);
 
   if (!user) {
     if (showSignUp) {
-      return <SignUpPage onComplete={() => setShowSignUp(false)} />;
+      return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background">Loading...</div>}>
+          <SignUpWrapper onComplete={() => setShowSignUp(false)} />
+        </Suspense>
+      );
     }
-    return <SignInPage onSignUpClick={() => setShowSignUp(true)} />;
+    return (
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background">Loading...</div>}>
+        <SignInPage onSignUpClick={() => setShowSignUp(true)} />
+      </Suspense>
+    );
   }
 
+  const handleStartLesson = (lesson: LessonItem) => {
+    setSelectedLesson(lesson);
+    setCurrentPage('lesson-detail');
+  };
+
   const renderPage = () => {
+    // For locals, return local home page
+    if (user.userType === 'local' && currentPage === 'home') {
+      return <LocalHomePage onNavigate={setCurrentPage} />;
+    }
+
     switch (currentPage) {
       case 'home':
-        return <HomePage />;
-      case 'streets':
-        return <StreetsPage />;
+        return <HomePage onNavigate={setCurrentPage} />;
+      case 'recommendations':
+        return <RecommendationsPage />;
       case 'lessons':
-        return <LessonsPage />;
+        return <LessonsPage onStartLesson={handleStartLesson} />;
+      case 'lesson-detail':
+        return selectedLesson ? (
+          <LessonDetailPage lesson={selectedLesson} onBack={() => setCurrentPage('lessons')} />
+        ) : (
+          <LessonsPage onStartLesson={handleStartLesson} />
+        );
       case 'bias':
         return <BiasPage />;
       case 'llm':
@@ -39,15 +84,39 @@ function AppContent() {
         return <EgyRealPage />;
       case 'help':
         return <HelpPage />;
+      case 'wishlist':
+        return <WishlistPage onNavigate={setCurrentPage} />;
+      case 'profile':
+        return <UserProfilePage onNavigate={setCurrentPage} />;
+      case 'comfort-zone':
+        return <ComfortZonePage />;
+      case 'local-blog':
+        return <LocalBlogPage />;
+      case 'hidden-gem':
+        return <HiddenGemForm />;
+      case 'notifications':
+        return <NotificationsPage />;
+      case 'earnings':
+        return <UserProfilePage onNavigate={setCurrentPage} />;
+      case 'match-local':
+        return <MatchWithLocalPage />;
       default:
-        return <HomePage />;
+        return user.userType === 'local' 
+          ? <LocalHomePage onNavigate={setCurrentPage} />
+          : <HomePage onNavigate={setCurrentPage} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar currentPage={currentPage} onNavigate={setCurrentPage} />
-      {renderPage()}
+      <main>
+        <Suspense fallback={<div className="container mx-auto py-12 px-4">Loading page...</div>}>
+          {renderPage()}
+        </Suspense>
+      </main>
+      <Toaster position="top-center" expand={false} richColors />
+      {showLocalRules && <LocalRulesPopup open={showLocalRules} onClose={() => setShowLocalRules(false)} />}
     </div>
   );
 }

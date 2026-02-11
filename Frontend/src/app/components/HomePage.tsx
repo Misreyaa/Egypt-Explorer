@@ -1,138 +1,178 @@
 import React from 'react';
-import { TravelCard, Destination } from './TravelCard';
 import { useUser } from '../context/UserContext';
+import { 
+  Navigation, 
+  GraduationCap, 
+  ShieldAlert, 
+  MessageSquare, 
+  Hash, 
+  HelpCircle, 
+  Sparkles,
+  SearchCheck,
+  ArrowRight,
+  Compass,
+  Bell,
+  Users
+} from 'lucide-react';
+import { Button } from './ui/button';
+import { Card, CardContent } from './ui/card';
 
-const allDestinations: Destination[] = [
-  {
-    id: '1',
-    name: 'Pyramids of Giza',
-    description: 'Explore the last remaining wonder of the ancient world. Stand in awe before the Great Pyramid and the Sphinx.',
-    imageUrl: 'https://images.unsplash.com/photo-1706651785622-5500a55197ed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxweXJhbWlkcyUyMGdpemElMjBlZ3lwdHxlbnwxfHx8fDE3NzA0ODg2MjN8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    category: ['historical', 'culture'],
-    travelType: ['solo', 'group', 'family'],
-    rating: 4.9,
-    duration: 'Half day',
-    groupSize: 'Any',
-  },
-  {
-    id: '2',
-    name: 'Luxor Temple',
-    description: 'Walk through the ancient temple complex dedicated to the Theban Triad. Best visited at sunset for magical golden hour views.',
-    imageUrl: 'https://images.unsplash.com/photo-1693654547147-24d94b4ed4ea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXhvciUyMHRlbXBsZSUyMGVneXB0fGVufDF8fHx8MTc3MDQ4ODYyNHww&ixlib=rb-4.1.0&q=80&w=1080',
-    category: ['historical', 'culture'],
-    travelType: ['solo', 'group', 'family'],
-    rating: 4.8,
-    duration: '2-3 hours',
-    groupSize: 'Any',
-  },
-  {
-    id: '3',
-    name: 'Cairo Streets Tour',
-    description: 'Experience the vibrant energy of Cairo. Navigate bustling bazaars, taste authentic street food, and meet locals.',
-    imageUrl: 'https://images.unsplash.com/photo-1709109021120-292795785de9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYWlybyUyMGVneXB0JTIwc3RyZWV0c3xlbnwxfHx8fDE3NzA0ODg2MjR8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    category: ['culture', 'culinary', 'shopping'],
-    travelType: ['solo', 'group'],
-    rating: 4.7,
-    duration: 'Full day',
-    groupSize: 'Small groups',
-  },
-  {
-    id: '4',
-    name: 'Red Sea Diving',
-    description: 'Discover the underwater wonders of the Red Sea. Perfect for both beginners and experienced divers.',
-    imageUrl: 'https://images.unsplash.com/photo-1650806140614-684f57e64de7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZWQlMjBzZWElMjBlZ3lwdCUyMGRpdmluZ3xlbnwxfHx8fDE3NzA0ODg2MjV8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    category: ['water', 'adventure'],
-    travelType: ['solo', 'group', 'family'],
-    rating: 4.9,
-    duration: 'Full day',
-    groupSize: 'Small groups',
-  },
-  {
-    id: '5',
-    name: 'Desert Safari Adventure',
-    description: 'Experience the magic of the Egyptian desert. Ride camels, watch the sunset over the dunes, and enjoy a traditional Bedouin dinner.',
-    imageUrl: 'https://images.unsplash.com/photo-1741213651580-f1a708aa3c7d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlZ3lwdGlhbiUyMGRlc2VydCUyMHNhZmFyaXxlbnwxfHx8fDE3NzA0ODg2MjV8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    category: ['adventure', 'culture'],
-    travelType: ['solo', 'group', 'family'],
-    rating: 4.8,
-    duration: 'Half day',
-    groupSize: 'Medium groups',
-  },
-  {
-    id: '6',
-    name: 'Nile River Cruise',
-    description: 'Sail along the historic Nile River. Enjoy luxurious accommodations while visiting temples and ancient sites along the way.',
-    imageUrl: 'https://images.unsplash.com/photo-1716639154156-db53b75a22ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuaWxlJTIwcml2ZXIlMjBjcnVpc2UlMjBlZ3lwdHxlbnwxfHx8fDE3NzA0ODMwNTN8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    category: ['water', 'historical', 'culture'],
-    travelType: ['solo', 'group', 'family'],
-    rating: 4.9,
-    duration: '3-7 days',
-    groupSize: 'Any',
-  },
-  {
-    id: '7',
-    name: 'Egyptian Museum',
-    description: 'Home to the world\'s largest collection of ancient Egyptian artifacts, including treasures from Tutankhamun\'s tomb.',
-    imageUrl: 'https://images.unsplash.com/photo-1763657320693-780211ebe83e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlZ3lwdGlhbiUyMG11c2V1bSUyMGFydGlmYWN0c3xlbnwxfHx8fDE3NzA0ODg2MjZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    category: ['historical', 'culture'],
-    travelType: ['solo', 'group', 'family'],
-    rating: 4.8,
-    duration: '2-4 hours',
-    groupSize: 'Any',
-  },
-];
+import { PharaohAnimation } from './PharaohAnimation';
 
-export const HomePage: React.FC = () => {
+interface HomePageProps {
+  onNavigate: (page: string) => void;
+}
+
+export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const { user } = useUser();
 
-  const getRecommendations = (): Destination[] => {
-    if (!user) return allDestinations;
-
-    return allDestinations
-      .filter(dest => {
-        const matchesActivities = dest.category.some(cat => user.activities.includes(cat));
-        const matchesTravelType = dest.travelType.includes(user.travelType);
-        return matchesActivities || matchesTravelType;
-      })
-      .sort((a, b) => {
-        const aScore = a.category.filter(cat => user.activities.includes(cat)).length;
-        const bScore = b.category.filter(cat => user.activities.includes(cat)).length;
-        return bScore - aScore;
-      });
-  };
-
-  const recommendations = getRecommendations();
+  const dashboardItems = [
+    { 
+      id: 'recommendations', 
+      label: 'Walk the Streets of Egypt', 
+      icon: Navigation, 
+      description: 'Personalized travel and cultural picks just for you.',
+      color: 'bg-primary' 
+    },
+    { 
+      id: 'lessons', 
+      label: 'The Lessons in Egyptians', 
+      icon: GraduationCap, 
+      description: 'Deep dive into the wisdom of ancient and modern culture.',
+      color: 'bg-brown-medium' 
+    },
+    { 
+      id: 'bias', 
+      label: 'Bias Detector', 
+      icon: ShieldAlert, 
+      description: 'Learn to identify stereotypes and cultural misrepresentations.',
+      color: 'bg-red-700' 
+    },
+    { 
+      id: 'llm', 
+      label: 'Talk to an LLM', 
+      icon: MessageSquare, 
+      description: 'Chat with our AI about Egyptian history and culture.',
+      color: 'bg-blue-700' 
+    },
+    { 
+      id: 'egyreal', 
+      label: 'Explore #EGYREAL', 
+      icon: Hash, 
+      description: 'See the authentic Egypt through the lens of locals.',
+      color: 'bg-orange-700' 
+    },
+    { 
+      id: 'help', 
+      label: 'Help Me', 
+      icon: HelpCircle, 
+      description: 'Find guides, tips, and emergency contacts.',
+      color: 'bg-pine-dark' 
+    },
+    { 
+      id: 'wishlist', 
+      label: 'Wishlist', 
+      icon: Sparkles, 
+      description: 'Your saved Egyptian experiences and hidden gems.',
+      color: 'bg-red-500' 
+    },
+    { 
+      id: 'comfort-zone', 
+      label: 'Go out of your comfort zone', 
+      icon: Compass, 
+      description: 'Explore destinations completely different from your usual style.',
+      color: 'bg-amber-600' 
+    },
+    { 
+      id: 'match-local', 
+      label: 'Match with a Local', 
+      icon: Users, 
+      description: 'Connect with verified locals who speak your language and share your interests.',
+      color: 'bg-purple-600' 
+    },
+    { 
+      id: 'local-blog', 
+      label: 'The Local Blog', 
+      icon: MessageSquare, 
+      description: 'Connect with the community. Share stories and get insider tips.',
+      color: 'bg-blue-600' 
+    },
+    { 
+      id: 'notifications', 
+      label: 'Notifications', 
+      icon: Bell, 
+      description: 'Stay updated on new posts, matches, and community interactions.',
+      color: 'bg-purple-600' 
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-papyrus-light">
-      <div className="container mx-auto py-6 sm:py-8 md:py-12 px-4">
-        <div className="mb-6 sm:mb-8 md:mb-12">
-          <h1 className="mb-2 sm:mb-3 text-brown-dark text-2xl sm:text-3xl md:text-4xl">
-            Welcome back, {user?.name}!
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto py-8 sm:py-12 md:py-16 px-4">
+        <PharaohAnimation />
+        
+        <div className="mb-10 text-center max-w-2xl mx-auto">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
+            Ahlan, {user?.profile.name}!
           </h1>
-          <p className="text-brown-medium text-sm sm:text-base md:text-lg">
-            Based on your preferences for <span className="font-semibold text-pine-primary">{user?.activities.join(', ')}</span> activities, here are our top recommendations for you.
+          <p className="text-muted-foreground text-lg">
+            Where would you like to start your journey today? Choose a path below to explore the wonders of Egypt.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-          {recommendations.map((destination) => (
-            <TravelCard
-              key={destination.id}
-              destination={destination}
-              userActivities={user?.activities}
-              onViewDetails={(id) => console.log('View details for:', id)}
-            />
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {dashboardItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Card 
+                key={item.label}
+                className="group relative overflow-hidden border-border hover:border-primary/50 hover:shadow-xl transition-all duration-300 cursor-pointer bg-card"
+                onClick={() => onNavigate(item.id)}
+              >
+                <CardContent className="p-6">
+                  <div className={`w-14 h-14 ${item.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    {item.label}
+                  </h3>
+                  <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
+                    {item.description}
+                  </p>
+                  <div className="flex items-center text-primary font-semibold text-sm group-hover:translate-x-1 transition-transform">
+                    Explore Now <ArrowRight className="ml-2 h-4 w-4" />
+                  </div>
+                </CardContent>
+                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <Icon className="h-16 w-16" />
+                </div>
+              </Card>
+            );
+          })}
         </div>
 
-        {recommendations.length === 0 && (
-          <div className="text-center py-12 bg-papyrus rounded-lg shadow-md">
-            <p className="text-brown-medium text-base sm:text-lg">
-              No recommendations found. Try updating your preferences!
+        <div className="mt-16 p-8 bg-brown-dark rounded-3xl text-papyrus-light text-center shadow-2xl relative overflow-hidden">
+          <div className="relative z-10">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Discover the Authentic Egypt</h2>
+            <p className="text-papyrus max-w-xl mx-auto mb-8">
+              Explore stories, places, and cultural nuances that define the Egyptian spirit.
             </p>
+            <Button 
+              onClick={() => onNavigate('egyreal')}
+              className="bg-pine-primary hover:bg-pine-dark text-white px-8 py-6 rounded-full text-lg shadow-lg"
+            >
+              Start Exploring #EGYREAL
+            </Button>
           </div>
-        )}
+          <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+            {/* Background pattern placeholder */}
+            <div className="grid grid-cols-8 gap-4 p-4">
+              {Array.from({ length: 16 }).map((_, i) => (
+                <Hash key={i} className="w-12 h-12" />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

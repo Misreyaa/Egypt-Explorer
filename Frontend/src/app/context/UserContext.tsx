@@ -1,46 +1,139 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+
+export interface VehicleInfo {
+  vehicle_type: string;
+  license_plate: string;
+  city: string;
+  capacity: string;
+  description?: string;
+}
+
+export interface ShopInfo {
+  name: string;
+  city: string;
+  address: string;
+  phone: string;
+  description?: string;
+  opening_hours: string;
+  categories: string[];
+}
+
+export interface LocalProfile {
+  name: string;
+  age: string;
+  city: string;
+  occupation: 'driver' | 'shopkeeper' | 'neighborhood_tourguide';
+  bio?: string;
+  avatarUrl?: string;
+  national_id: string;
+  phone: string;
+  spoken_languages: string[];
+  vehicle_info?: VehicleInfo;
+  shop_info?: ShopInfo;
+  hasSeenRules?: boolean;
+  earnings?: number;
+  instaPayDetails?: string;
+}
 
 export interface UserProfile {
   name: string;
   age: string;
+  username: string;
+  email: string;
+  country: string;
+  language: string;
+  currency: string;
+  appLanguage: string;
   travelType: 'group' | 'solo' | 'family';
   activities: string[];
   avatarUrl?: string;
+  wishlist?: string[]; 
+  preferences?: string[];
+  visited?: string[];
+  favorites?: string[];
+  bio?: string;
+  posts: string[];
 }
 
+export type User = {
+  userType: 'tourist';
+  profile: UserProfile;
+} | {
+  userType: 'local';
+  profile: LocalProfile;
+};
+
 interface UserContextType {
-  user: UserProfile | null;
+  user: User | null;
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
   signIn: (email: string, password: string) => boolean;
-  signUp: (profile: UserProfile, email: string, password: string) => void;
+  signUp: (user: User, email: string, password: string) => void;
   signOut: () => void;
-  updateProfile: (profile: UserProfile) => void;
+  updateProfile: (user: User) => void;
+  toggleWishlist: (tourId: string) => void;
+  markRulesAsSeen: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
+  // Initialize from localStorage
   useEffect(() => {
-    // Check if user is logged in
-    const currentUser = localStorage.getItem('currentUser');
-    if (currentUser) {
-      const userData = localStorage.getItem(`user_${currentUser}`);
-      if (userData) {
-        setUser(JSON.parse(userData));
+    try {
+      // Load user
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser) {
+        const userData = localStorage.getItem(`user_${currentUser}`);
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+          
+          // Apply RTL for Arabic (only for tourists)
+          if (parsedUser.userType === 'tourist' && parsedUser.profile.appLanguage === 'Arabic') {
+            document.documentElement.setAttribute('dir', 'rtl');
+            document.documentElement.setAttribute('lang', 'ar');
+          } else {
+            document.documentElement.setAttribute('dir', 'ltr');
+            document.documentElement.setAttribute('lang', 'en');
+          }
+        }
       }
+
+      // Load theme
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        setTheme(savedTheme);
+        document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+      } else if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setTheme('dark');
+        document.documentElement.classList.add('dark');
+      }
+    } catch (error) {
+      console.error('Error initializing UserProvider:', error);
     }
   }, []);
 
-  const signUp = (profile: UserProfile, email: string, password: string) => {
-    // Store user credentials and profile
-    localStorage.setItem(`auth_${email}`, password);
-    localStorage.setItem(`user_${email}`, JSON.stringify(profile));
-    localStorage.setItem('currentUser', email);
-    setUser(profile);
-  };
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => {
+      const newTheme = prev === 'light' ? 'dark' : 'light';
+      localStorage.setItem('theme', newTheme);
+      document.documentElement.classList.toggle('dark', newTheme === 'dark');
+      return newTheme;
+    });
+  }, []);
 
-  const signIn = (email: string, password: string): boolean => {
+  const signUp = useCallback((user: User, email: string, password: string) => {
+    localStorage.setItem(`auth_${email}`, password);
+    localStorage.setItem(`user_${email}`, JSON.stringify(user));
+    localStorage.setItem('currentUser', email);
+    setUser(user);
+  }, []);
+
+  const signIn = useCallback((email: string, password: string): boolean => {
     const storedPassword = localStorage.getItem(`auth_${email}`);
     if (storedPassword === password) {
       const userData = localStorage.getItem(`user_${email}`);
@@ -51,23 +144,65 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     return false;
-  };
+  }, []);
 
-  const signOut = () => {
+  const signOut = useCallback(() => {
     localStorage.removeItem('currentUser');
     setUser(null);
-  };
+  }, []);
 
-  const updateProfile = (profile: UserProfile) => {
+  const updateProfile = useCallback((user: User) => {
     const currentUser = localStorage.getItem('currentUser');
     if (currentUser) {
-      localStorage.setItem(`user_${currentUser}`, JSON.stringify(profile));
-      setUser(profile);
+      localStorage.setItem(`user_${currentUser}`, JSON.stringify(user));
+      setUser(user);
+      
+      // Apply RTL for Arabic (only for tourists)
+      if (user.userType === 'tourist' && user.profile.appLanguage === 'Arabic') {
+        document.documentElement.setAttribute('dir', 'rtl');
+        document.documentElement.setAttribute('lang', 'ar');
+      } else {
+        document.documentElement.setAttribute('dir', 'ltr');
+        document.documentElement.setAttribute('lang', 'en');
+      }
     }
-  };
+  }, []);
+
+  const toggleWishlist = useCallback((tourId: string) => {
+    if (!user || user.userType !== 'tourist') return;
+    
+    const wishlist = user.profile.wishlist || [];
+    const isAlreadyInWishlist = wishlist.includes(tourId);
+    
+    const newWishlist = isAlreadyInWishlist
+      ? wishlist.filter(id => id !== tourId)
+      : [...wishlist, tourId];
+      
+    const updatedProfile = { ...user.profile, wishlist: newWishlist };
+    updateProfile({ ...user, profile: updatedProfile });
+  }, [user, updateProfile]);
+
+  const markRulesAsSeen = useCallback(() => {
+    if (!user) return;
+    
+    if (user.userType === 'local') {
+      const updatedProfile = { ...user.profile, hasSeenRules: true };
+      updateProfile({ ...user, profile: updatedProfile });
+    }
+  }, [user, updateProfile]);
 
   return (
-    <UserContext.Provider value={{ user, signIn, signUp, signOut, updateProfile }}>
+    <UserContext.Provider value={{ 
+      user, 
+      theme, 
+      toggleTheme, 
+      signIn, 
+      signUp, 
+      signOut, 
+      updateProfile,
+      toggleWishlist,
+      markRulesAsSeen
+    }}>
       {children}
     </UserContext.Provider>
   );

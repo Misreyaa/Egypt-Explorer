@@ -5,39 +5,73 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useUser } from '../context/UserContext';
 import { Alert, AlertDescription } from './ui/alert';
-import { Pyramid } from 'lucide-react';
+import { Pyramid, Sun, Moon } from 'lucide-react';
 
 interface SignInPageProps {
   onSignUpClick: () => void;
 }
 
 export const SignInPage: React.FC<SignInPageProps> = ({ onSignUpClick }) => {
-  const { signIn } = useUser();
+  const { signIn, theme, toggleTheme } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    
-    const success = signIn(email, password);
-    if (!success) {
-      setError('Invalid email or password. Please try again.');
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+
+  try {
+    const res = await fetch("http://127.0.0.1:8000/locals/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: email,   // your backend expects "username"
+        password: password,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Invalid credentials");
     }
-  };
+
+    const data = await res.json();
+
+    // store token
+    localStorage.setItem("token", data.access_token);
+
+    // tell app user is logged in
+    signIn(email, data.access_token); 
+  } catch (err) {
+    setError("Invalid email or password. Please try again.");
+  }
+};
+
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-papyrus-light p-4">
-      <Card className="w-full max-w-md bg-papyrus shadow-xl border-brown-medium/20">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          className="text-foreground hover:bg-accent transition-all rounded-full"
+          title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+        >
+          {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+        </Button>
+      </div>
+      <Card className="w-full max-w-md bg-card shadow-xl border-border">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="h-16 w-16 bg-gradient-to-br from-pine-primary to-pine-dark rounded-full flex items-center justify-center shadow-lg">
               <Pyramid className="h-10 w-10 text-white" />
             </div>
           </div>
-          <CardTitle className="text-brown-dark">Welcome Back</CardTitle>
-          <CardDescription className="text-brown-medium">Sign in to continue your Egyptian adventure</CardDescription>
+          <CardTitle className="text-foreground">Welcome Back</CardTitle>
+          <CardDescription className="text-muted-foreground">Sign in to continue your Egyptian adventure</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

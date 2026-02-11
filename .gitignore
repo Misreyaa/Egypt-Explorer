@@ -14,10 +14,13 @@
 
 # Environment files
 /.env
+/Frontend/node_modules/
+/RAG/app/__pycache__/
 
 # Angular CLI and build artefacts
 /.angular-cli.json
 /.ng/
+*.pyc
 
 # TypeScript cache
 *.tsbuildinfo

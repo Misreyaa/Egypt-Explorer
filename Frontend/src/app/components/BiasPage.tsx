@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Alert, AlertDescription } from './ui/alert';
 import { Badge } from './ui/badge';
-import { ShieldAlert, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { ShieldAlert, AlertCircle, CheckCircle, Info, Upload, Image as ImageIcon, X } from 'lucide-react';
 
 interface BiasCheck {
   type: string;
@@ -44,18 +46,37 @@ export const BiasPage: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [results, setResults] = useState<BiasCheck[]>([]);
   const [analyzed, setAnalyzed] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const analyzeText = () => {
-    // Simulated bias detection - in real app, this would use AI/NLP
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+        // Simulate OCR
+        setInputText("Thinking about the mysterious pyramids and how all Egyptians still live like the ancient times... it seems so exotic.");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const analyzeText = async () => {
+    setIsAnalyzing(true);
+    setAnalyzed(false);
+
+    // Mock delay for AI analysis
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
     const detectedBiases: BiasCheck[] = [];
-
     const lowerText = inputText.toLowerCase();
 
     if (lowerText.includes('exotic') || lowerText.includes('mysterious') || lowerText.includes('ancient land')) {
       detectedBiases.push(commonBiases[1]);
     }
 
-    if (lowerText.includes('all egyptians') || lowerText.includes('they all')) {
+    if (lowerText.includes('all egyptians') || lowerText.includes('they all') || lowerText.includes('live like')) {
       detectedBiases.push(commonBiases[0]);
     }
 
@@ -69,6 +90,7 @@ export const BiasPage: React.FC = () => {
 
     setResults(detectedBiases);
     setAnalyzed(true);
+    setIsAnalyzing(false);
   };
 
   const getSeverityColor = (severity: string) => {
@@ -102,20 +124,87 @@ export const BiasPage: React.FC = () => {
         <CardHeader>
           <CardTitle>Analyze Your Thoughts</CardTitle>
           <CardDescription>
-            Enter any thoughts, assumptions, or questions about Egypt and Egyptian culture. We'll help identify potential biases and provide educational context.
+            Enter text directly or upload an image of text (like a social media post or article snippet) to identify potential biases.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Textarea
-            placeholder="Example: 'I think all Egyptians...' or 'Egypt seems like such an exotic place...'"
-            className="min-h-32"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-          />
-          <Button onClick={analyzeText} disabled={!inputText.trim()} className="w-full">
-            <ShieldAlert className="mr-2 h-4 w-4" />
-            Analyze for Bias
-          </Button>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 space-y-4">
+              <Textarea
+                placeholder="Example: 'I think all Egyptians...' or 'Egypt seems like such an exotic place...'"
+                className="min-h-32"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button 
+                  onClick={analyzeText} 
+                  disabled={!inputText.trim() || isAnalyzing} 
+                  className="flex-1"
+                >
+                  {isAnalyzing ? 'Analyzing...' : (
+                    <>
+                      <ShieldAlert className="mr-2 h-4 w-4" />
+                      Analyze for Bias
+                    </>
+                  )}
+                </Button>
+                {inputText && (
+                  <Button variant="ghost" size="icon" onClick={() => setInputText('')}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            <div className="md:w-64 space-y-4">
+              <div className="border-2 border-dashed border-border rounded-lg p-4 flex flex-col items-center justify-center min-h-32 hover:bg-accent transition-colors relative group">
+                {selectedImage ? (
+                  <>
+                    <img src={selectedImage} alt="Uploaded" className="max-h-24 rounded object-cover mb-2" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full bg-background shadow-sm"
+                      onClick={() => {
+                        setSelectedImage(null);
+                        setInputText('');
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground text-center">Text extracted from image</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="h-10 w-10 bg-secondary rounded-full flex items-center justify-center mb-2">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <Label htmlFor="image-upload" className="cursor-pointer text-xs font-medium text-primary text-center">
+                      Upload Image of Text
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground mt-1 text-center">AI will extract the text</p>
+                    <Input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </>
+                )}
+              </div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <ImageIcon className="h-3 w-3 text-blue-500" />
+                  <span className="text-[10px] font-bold text-blue-600 uppercase">Pro Tip</span>
+                </div>
+                <p className="text-[10px] text-blue-800 leading-tight">
+                  Take a screenshot of news or social media to see if it contains Orientalist framing.
+                </p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -164,7 +253,7 @@ export const BiasPage: React.FC = () => {
         </div>
       )}
 
-      <Card className="mt-8 bg-gradient-to-r from-blue-50 to-cyan-50">
+      <Card className="mt-8 bg-gradient-to-r from-primary/10 to-accent/10">
         <CardHeader>
           <CardTitle>Common Biases to Avoid</CardTitle>
           <CardDescription>Learn about cultural sensitivity</CardDescription>

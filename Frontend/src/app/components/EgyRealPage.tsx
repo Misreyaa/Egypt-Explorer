@@ -118,7 +118,7 @@ export const EgyRealPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-papyrus-light">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto py-6 sm:py-8 md:py-12 px-4 max-w-7xl">
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
@@ -126,8 +126,8 @@ export const EgyRealPage: React.FC = () => {
               <Hash className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <h1 className="text-brown-dark">Explore #EGYREAL</h1>
-              <p className="text-brown-medium text-sm sm:text-base">See authentic experiences from real travelers in Egypt</p>
+              <h1 className="text-foreground">Explore #EGYREAL</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">See authentic experiences from real travelers in Egypt</p>
             </div>
           </div>
 
@@ -144,7 +144,7 @@ export const EgyRealPage: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredPosts.map((post) => (
-            <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow bg-papyrus border-brown-medium/20">
+            <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow bg-card border-border">
               <CardHeader className="p-3">
                 <div className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
@@ -212,15 +212,6 @@ export const EgyRealPage: React.FC = () => {
             <p className="text-muted-foreground">Try adjusting your search terms</p>
           </Card>
         )}
-
-        <Card className="mt-6 sm:mt-8 bg-gradient-to-r from-pink-500/10 to-rose-600/10 border-pink-500/20">
-          <CardHeader>
-            <h3 className="font-semibold">Share Your #EGYREAL Experience</h3>
-            <p className="text-sm text-muted-foreground">
-              Post your authentic Egyptian travel moments on social media with #EGYREAL to inspire other travelers!
-            </p>
-          </CardHeader>
-        </Card>
       </div>
     </div>
   );
