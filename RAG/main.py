@@ -11,7 +11,7 @@ from app.reranker import rerank
 
 from app.generation import build_context, generate, build_rule_based_answer
 
-from app.routes import destinations, tourists, locals, posts, shops, vehicles, user
+from app.routes import destinations, tourists, locals, posts, shops, vehicles, user,bias
 
 from app.auth import create_access_token, get_current_user  # get_current_user verifies JWT
 
@@ -252,6 +252,8 @@ app.include_router(posts.router, prefix="/posts", tags=["Posts"])
 app.include_router(shops.router, prefix="/shops", tags=["Shops"])
 app.include_router(vehicles.router, prefix="/vehicles", tags=["Vehicles"])
 app.include_router(user.router, prefix="", tags=["Users"])
+app.include_router(bias.router, prefix="", tags=["Bias"])
+
 
 
 
@@ -535,6 +537,8 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
         },
         places=list(place_map.values()),
     )
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8080)
 
