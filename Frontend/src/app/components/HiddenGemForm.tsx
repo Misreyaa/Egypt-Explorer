@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 interface HiddenGemFormData {
   name: string;
   category: string;
+  sub_category: string;
   city: string;
   governorate: string;
   location: string;
@@ -92,6 +93,7 @@ export const HiddenGemForm: React.FC = () => {
   const [formData, setFormData] = useState<HiddenGemFormData>({
     name: '',
     category: '',
+    sub_category: '',
     city: '',
     governorate: '',
     location: '',
@@ -143,7 +145,7 @@ export const HiddenGemForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!formData.name || !formData.category || !formData.city || !formData.governorate) {
       toast.error('Please fill in all required fields');
@@ -153,28 +155,68 @@ export const HiddenGemForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Store in localStorage for demo purposes
-      const existingGems = JSON.parse(localStorage.getItem('hidden_gems') || '[]');
-      const newGem = {
-        ...formData,
-        id: `gem_${Date.now()}`,
-        submittedBy: localStorage.getItem('currentUser'),
-        submittedAt: new Date().toISOString(),
-        status: 'pending' // pending, approved, rejected
+      // Parse location string (lat, lng format) into coordinates object
+      let locationCoords = { lat: 0, lng: 0 };
+      if (formData.location) {
+        const coordMatch = formData.location.match(/(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
+        if (coordMatch) {
+          locationCoords = {
+            lat: parseFloat(coordMatch[1]),
+            lng: parseFloat(coordMatch[2])
+          };
+        }
+      }
+
+      // Prepare destination data for API
+      const destinationPayload = {
+        name: formData.name,
+        place_id: `place_${Date.now()}`,
+        category: formData.category,
+        sub_category: formData.sub_category,
+        city: formData.city,
+        governorate: formData.governorate,
+        location: locationCoords,
+        short_description: formData.short_description,
+        historical_context: formData.historical_context,
+        what_makes_it_special: formData.what_makes_it_special,
+        visitor_experience: formData.visitor_experience,
+        opening_hours: formData.opening_hours,
+        best_time_to_visit: formData.best_time_to_visit,
+        dress_code: formData.dress_code,
+        accessibility: formData.accessibility,
+        traffic_and_access: formData.traffic_and_access,
+        average_visit_duration: formData.average_visit_duration,
+        entry_fee: formData.entry_fee,
+        safety_notes: formData.safety_notes,
+        local_tips: formData.local_tips,
+        tags: formData.tags,
+        image_path: formData.image_path,
+        last_updated: new Date().toISOString()
       };
-      
-      existingGems.push(newGem);
-      localStorage.setItem('hidden_gems', JSON.stringify(existingGems));
-      
-      toast.success('Hidden gem submitted successfully! It will be reviewed by our team.');
-      
+
+      // Call POST API endpoint
+      const response = await fetch('http://127.0.0.1:8080/destinations/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(destinationPayload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit destination');
+      }
+
+      const result = await response.json();
+
+      toast.success(`Hidden gem submitted successfully! Destination ID: ${result._id}`);
+
       // Reset form
       setFormData({
         name: '',
         category: '',
+        sub_category: '',
         city: '',
         governorate: '',
         location: '',
@@ -196,7 +238,12 @@ export const HiddenGemForm: React.FC = () => {
       });
       setImagePreview('');
     } catch (error) {
-      toast.error('Failed to submit hidden gem. Please try again.');
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit hidden gem. Please try again.';
+      toast.error(errorMessage);
+      console.error('Submission error:', error);
+
+
     } finally {
       setIsSubmitting(false);
     }
@@ -215,16 +262,16 @@ export const HiddenGemForm: React.FC = () => {
               Share a special place with tourists visiting Egypt. Your local knowledge helps travelers discover authentic experiences.
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-8">
-              
+
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
                   Basic Information
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name">
@@ -238,7 +285,7 @@ export const HiddenGemForm: React.FC = () => {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="category">
                       Category <span className="text-red-500">*</span>
@@ -254,7 +301,20 @@ export const HiddenGemForm: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
+                  <div>
+                    <Label htmlFor="sub_category">
+                      Sub Category <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="sub_category"
+                      value={formData.sub_category}
+                      onChange={(e) => handleInputChange('sub_category', e.target.value)}
+                      placeholder="e.g., local_experiences, ancient_sites"
+                      required
+                    />
+                  </div>
+
                   <div>
                     <Label htmlFor="city">
                       City <span className="text-red-500">*</span>
@@ -267,7 +327,7 @@ export const HiddenGemForm: React.FC = () => {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="governorate">
                       Governorate <span className="text-red-500">*</span>
@@ -284,7 +344,7 @@ export const HiddenGemForm: React.FC = () => {
                     </Select>
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="location" className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
@@ -304,7 +364,7 @@ export const HiddenGemForm: React.FC = () => {
                 <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
                   Descriptions
                 </h3>
-                
+
                 <div>
                   <Label htmlFor="short_description">Short Description</Label>
                   <Textarea
@@ -315,7 +375,7 @@ export const HiddenGemForm: React.FC = () => {
                     rows={2}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="historical_context">Historical Context</Label>
                   <Textarea
@@ -326,7 +386,7 @@ export const HiddenGemForm: React.FC = () => {
                     rows={3}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="what_makes_it_special">What Makes It Special?</Label>
                   <Textarea
@@ -337,7 +397,7 @@ export const HiddenGemForm: React.FC = () => {
                     rows={3}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="visitor_experience">Visitor Experience</Label>
                   <Textarea
@@ -355,7 +415,7 @@ export const HiddenGemForm: React.FC = () => {
                 <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
                   Practical Information
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="opening_hours">Opening Hours</Label>
@@ -366,7 +426,7 @@ export const HiddenGemForm: React.FC = () => {
                       placeholder="e.g., 9 AM - 6 PM daily"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="best_time_to_visit">Best Time to Visit</Label>
                     <Input
@@ -376,7 +436,7 @@ export const HiddenGemForm: React.FC = () => {
                       placeholder="e.g., Early morning or sunset"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="average_visit_duration">Average Visit Duration</Label>
                     <Input
@@ -386,7 +446,7 @@ export const HiddenGemForm: React.FC = () => {
                       placeholder="e.g., 1-2 hours"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="entry_fee">Entry Fee</Label>
                     <Input
@@ -396,7 +456,7 @@ export const HiddenGemForm: React.FC = () => {
                       placeholder="e.g., Free or 50 EGP"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="dress_code">Dress Code</Label>
                     <Input
@@ -406,7 +466,7 @@ export const HiddenGemForm: React.FC = () => {
                       placeholder="e.g., Modest dress required"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="accessibility">Accessibility</Label>
                     <Input
@@ -417,7 +477,7 @@ export const HiddenGemForm: React.FC = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="traffic_and_access">Traffic & Access</Label>
                   <Textarea
@@ -435,7 +495,7 @@ export const HiddenGemForm: React.FC = () => {
                 <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
                   Safety & Local Tips
                 </h3>
-                
+
                 <div>
                   <Label htmlFor="safety_notes">Safety Notes</Label>
                   <Textarea
@@ -446,7 +506,7 @@ export const HiddenGemForm: React.FC = () => {
                     rows={2}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="local_tips">Local Tips</Label>
                   <Textarea
@@ -469,9 +529,8 @@ export const HiddenGemForm: React.FC = () => {
                   {availableTags.map(tag => (
                     <div
                       key={tag}
-                      className={`flex items-center space-x-2 p-2 border rounded-lg cursor-pointer transition-colors ${
-                        formData.tags.includes(tag) ? 'bg-primary/10 border-primary' : 'hover:bg-accent'
-                      }`}
+                      className={`flex items-center space-x-2 p-2 border rounded-lg cursor-pointer transition-colors ${formData.tags.includes(tag) ? 'bg-primary/10 border-primary' : 'hover:bg-accent'
+                        }`}
                       onClick={() => handleTagToggle(tag)}
                     >
                       <Checkbox
@@ -489,15 +548,15 @@ export const HiddenGemForm: React.FC = () => {
                 <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
                   Image
                 </h3>
-                
+
                 <div>
                   <Label htmlFor="image">Upload Image</Label>
                   <div className="mt-2">
                     {imagePreview ? (
                       <div className="relative">
-                        <img 
-                          src={imagePreview} 
-                          alt="Preview" 
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
                           className="w-full h-64 object-cover rounded-lg border border-border"
                         />
                         <Button
@@ -514,8 +573,8 @@ export const HiddenGemForm: React.FC = () => {
                         </Button>
                       </div>
                     ) : (
-                      <Label 
-                        htmlFor="image-upload" 
+                      <Label
+                        htmlFor="image-upload"
                         className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent transition-colors"
                       >
                         <Upload className="h-12 w-12 text-muted-foreground mb-2" />
@@ -536,8 +595,8 @@ export const HiddenGemForm: React.FC = () => {
 
               {/* Submit Button */}
               <div className="flex justify-end pt-4">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full md:w-auto gap-2 bg-pine-primary hover:bg-pine-dark"
                   disabled={isSubmitting}
                 >

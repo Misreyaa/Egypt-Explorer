@@ -53,28 +53,28 @@ class Location(BaseModel):
 class Destination(BaseModel):
     name: str
     place_id: str
-    category: Optional[str]
-    sub_category: Optional[str]
-    city: Optional[str]
-    governorate: Optional[str]
-    location: Optional[Location]
-    short_description: Optional[str]
-    historical_context: Optional[str]
-    what_makes_it_special: Optional[str]
-    visitor_experience: Optional[str]
-    opening_hours: Optional[str]
-    best_time_to_visit: Optional[str]
-    dress_code: Optional[str]
-    accessibility: Optional[str]
-    traffic_and_access: Optional[str]
-    average_visit_duration: Optional[str]
-    entry_fee: Optional[str]
-    safety_notes: Optional[str]
-    local_tips: Optional[str]
+    category: Optional[str] = None
+    sub_category: Optional[str] = None
+    city: Optional[str] = None
+    governorate: Optional[str] = None
+    location: Optional[Location] = None
+    short_description: Optional[str] = None
+    historical_context: Optional[str] = None
+    what_makes_it_special: Optional[str] = None
+    visitor_experience: Optional[str] = None
+    opening_hours: Optional[str] = None
+    best_time_to_visit: Optional[str] = None
+    dress_code: Optional[str] = None
+    accessibility: Optional[str] = None
+    traffic_and_access: Optional[str] = None
+    average_visit_duration: Optional[str] = None
+    entry_fee: Optional[str] = None
+    safety_notes: Optional[str] = None
+    local_tips: Optional[str] = None
     tags: List[str] = []
     sources: List[str] = []
-    last_updated: Optional[str]
-    image_path: Optional[str]
+    last_updated: Optional[str] = None
+    image_path: Optional[str] = None
 
 
 class Tourist(BaseModel):
