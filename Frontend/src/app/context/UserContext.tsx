@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 
 export interface VehicleInfo {
   vehicle_type: string;
@@ -119,12 +120,40 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const signUp = useCallback((user: User, email: string, password: string) => {
-    localStorage.setItem(`auth_${email}`, password);
-    localStorage.setItem(`user_${email}`, JSON.stringify(user));
-    localStorage.setItem('currentUser', email);
-    setUser(user);
-  }, []);
+
+  const signUp = useCallback(
+    async (user: User, email: string, password: string) => {
+      try {
+        console.log('Signing up user:', { email, user });
+        console.log('User profile details:', user.profile);
+        // Send user data to your backend API
+        const response = await axios.post('http://127.0.0.1:8000/tourist/signup', {
+          email,
+          password, // backend should hash this
+          profile: user,
+        });
+
+        // Example: backend returns the created user and a token
+        const { data } = response;
+        const { token, user: createdUser } = data;
+
+        // Save token (JWT) in memory or localStorage
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('currentUser', email);
+
+        // Optionally store user profile locally for fast access
+        localStorage.setItem('user_' + email, JSON.stringify(createdUser));
+
+        return createdUser;
+      } catch (error: any) {
+        console.error('Sign up failed:', error.response?.data || error.message);
+        throw error;
+      }
+    },
+    []
+  );
+
+
 
   const signIn = useCallback((email: string, password: string): boolean => {
     const storedPassword = localStorage.getItem(`auth_${email}`);

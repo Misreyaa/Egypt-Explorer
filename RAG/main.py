@@ -9,6 +9,13 @@ from app.generation import build_context, generate, build_rule_based_answer
 from app.routes import destinations, tourists, locals, posts, shops, vehicles
 from app.auth import create_access_token, get_current_user  # get_current_user verifies JWT
 from app.db import destinations_collection
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+]
+
 
 
 def _is_missing_value(value) -> bool:
@@ -203,7 +210,13 @@ app = FastAPI(
     description="API for destinations, tourists, locals, posts, shops, and vehicles",
     version="1.0.0"
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/health")
 def health():
