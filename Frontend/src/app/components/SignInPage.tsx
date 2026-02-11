@@ -17,38 +17,15 @@ export const SignInPage: React.FC<SignInPageProps> = ({ onSignUpClick }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
-
-  try {
-    const res = await fetch("http://127.0.0.1:8000/locals/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: email,   // your backend expects "username"
-        password: password,
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Invalid credentials");
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    const success = signIn(email, password);
+    if (!success) {
+      setError('Invalid email or password. Please try again.');
     }
-
-    const data = await res.json();
-
-    // store token
-    localStorage.setItem("token", data.access_token);
-
-    // tell app user is logged in
-    signIn(email, data.access_token); 
-  } catch (err) {
-    setError("Invalid email or password. Please try again.");
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">

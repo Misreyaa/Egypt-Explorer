@@ -126,29 +126,21 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onComplete, initialEmail
     }
   };
 
-const handleSubmit = async () => {
-
-  const payload: UserProfile = {
-    name,
-    username: name.replace(/\s+/g, '').toLowerCase(),
-    email,
-    password,
-    age: Number(age),
-    country,
-    languages: languagesList,
-    currency,
-    appLanguage,
-    travelType,
-    activities,
-    avatarUrl,
-    bio: "",
+  const handleSubmit = () => {
+    const profile: UserProfile = {
+      name,
+      age,
+      country,
+      languages: languagesList,
+      currency,
+      appLanguage,
+      travelType,
+      activities,
+      avatarUrl,
+    };
+    signUp({ userType: 'tourist', profile }, email, password);
+    onComplete();
   };
-
-  await signUp({ userType: "tourist", profile: payload }, email, password);
-  onComplete();
-};
-
-
 
   const canProceedStep1 = email && password;
   const canProceedStep2 = name && age;
@@ -530,11 +522,8 @@ const handleSubmit = async () => {
                 <Button variant="outline" onClick={() => setStep(5)} className="flex-1">
                   Back
                 </Button>
-                <Button
-                onClick={handleSubmit}
-                className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-                >
-                Complete Sign Up
+                <Button onClick={handleSubmit} className="flex-1">
+                  Complete Sign Up
                 </Button>
               </div>
             </div>

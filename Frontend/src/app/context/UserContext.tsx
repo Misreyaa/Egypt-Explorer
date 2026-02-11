@@ -37,27 +37,16 @@ export interface LocalProfile {
 
 export interface UserProfile {
   name: string;
-  username: string;
-  email: string;
-  password: string;
-
-  age?: number;
-  country?: string;
-  languages: string[];        // MULTI language
-  currency?: string;
-  appLanguage?: string;
-  travelType?: 'group' | 'solo' | 'family';
-
-  activities: string[];       // preferences
+  age: string;
+  country: string;
+  languages: string[];
+  currency: string;
+  appLanguage: string;
+  travelType: 'group' | 'solo' | 'family';
+  activities: string[];
   avatarUrl?: string;
-  bio?: string;
-  wishlist?: string[];      // tour IDs  
-
-  visited?: string[];
-  favorites?: string[];
-  posts?: string[];
+  wishlist?: string[]; // Array of tour IDs
 }
-
 
 export type User = {
   userType: 'tourist';

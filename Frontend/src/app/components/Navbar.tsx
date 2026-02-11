@@ -11,7 +11,7 @@ import {
 } from './ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet';
 import { useUser } from '../context/UserContext';
-import { Pyramid, Navigation, GraduationCap, ShieldAlert, MessageSquare, Hash, HelpCircle, LogOut, Menu, Sun, Moon, Sparkles, User, Settings, Compass, Bell, Users } from 'lucide-react';
+import { Pyramid, Navigation, GraduationCap, ShieldAlert, MessageSquare, Hash, HelpCircle, LogOut, Menu, Sun, Moon, Sparkles, User, Settings, Compass, Bell, Users, Bot } from 'lucide-react';
 
 interface NavbarProps {
   currentPage: string;
@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
     { id: 'recommendations', label: 'Walk the Streets of Egypt', icon: Navigation },
     { id: 'lessons', label: 'The Lessons in Egyptians', icon: GraduationCap },
     { id: 'bias', label: 'Bias Detector', icon: ShieldAlert },
-    { id: 'llm', label: 'Talk to an LLM', icon: MessageSquare },
+    { id: 'llm', label: 'Talk to me', icon: Bot },
     { id: 'egyreal', label: 'Explore #EGYREAL', icon: Hash },
     { id: 'help', label: 'Help Me', icon: HelpCircle },
     { id: 'wishlist', label: 'Wishlist', icon: Sparkles },
