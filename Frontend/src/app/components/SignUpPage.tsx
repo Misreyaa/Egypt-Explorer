@@ -127,20 +127,23 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onComplete, initialEmail
   };
 
   const handleSubmit = () => {
-    const profile: UserProfile = {
-      name,
-      age,
-      country,
-      languages: languagesList,
-      currency,
-      appLanguage,
-      travelType,
-      activities,
-      avatarUrl,
-    };
-    signUp({ userType: 'tourist', profile }, email, password);
-    onComplete();
+  const payload = {
+    name,
+    email,
+    password,
+    age,             // number
+    country,
+    languages: languagesList,
+    currency,
+    appLanguage: appLanguage, // must be snake_case
+    travelType: travelType,
+    activities,
+    avatarUrl: avatarUrl,
+    bio: ''
   };
+  signUp({userType:'tourist', profile: payload},email,password);  // <-- send exactly this
+};
+
 
   const canProceedStep1 = email && password;
   const canProceedStep2 = name && age;

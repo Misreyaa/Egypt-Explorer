@@ -122,36 +122,54 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   const signUp = useCallback(
-    async (user: User, email: string, password: string) => {
-      try {
-        console.log('Signing up user:', { email, user });
-        console.log('User profile details:', user.profile);
-        // Send user data to your backend API
-        const response = await axios.post('http://127.0.0.1:8000/tourist/signup', {
-          email,
-          password, // backend should hash this
-          profile: user,
-        });
-
-        // Example: backend returns the created user and a token
-        const { data } = response;
-        const { token, user: createdUser } = data;
-
-        // Save token (JWT) in memory or localStorage
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('currentUser', email);
-
-        // Optionally store user profile locally for fast access
-        localStorage.setItem('user_' + email, JSON.stringify(createdUser));
-
-        return createdUser;
-      } catch (error: any) {
-        console.error('Sign up failed:', error.response?.data || error.message);
-        throw error;
+  async (user: User, email: string, password: string) => {
+    try {
+      if (user.userType !== "tourist") {
+        throw new Error("Only tourist signup supported for now");
       }
-    },
-    []
-  );
+
+      const profile = user.profile;
+
+      const payload = {
+        name: profile.name,
+        email: email,
+        password: password,
+        age: Number(profile.age),
+        country: profile.country,
+        languages: profile.languages,
+        currency: profile.currency,
+        app_language: profile.appLanguage,
+        travel_type: profile.travelType,
+        activities: profile.activities,
+        avatar_url: profile.avatarUrl || "",
+        bio: ""
+      };
+
+      console.log("SIGNUP PAYLOAD:", payload);
+
+      const response = await axios.post(
+        "http://127.0.0.1:8080/tourists/signup",
+        payload,
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      const { token, user: createdUser } = response.data;
+
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("currentUser", email);
+      localStorage.setItem("user_" + email, JSON.stringify(createdUser));
+
+      setUser(createdUser);
+
+      return createdUser;
+    } catch (error: any) {
+      console.error("Sign up failed:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+  []
+);
+
 
 
 

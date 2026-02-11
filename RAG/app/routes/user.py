@@ -10,11 +10,12 @@ router = APIRouter()
 # ----------------- Tourist Signup -----------------
 @router.post("/tourist/signup")
 async def tourist_signup(request: TouristSignupRequest):
-    existing = await tourists_collection.find_one({"username": request.username})
+    existing = await tourists_collection.find_one({"email": request.email})
     if existing:
-        raise HTTPException(status_code=400, detail="Username already exists")
+        raise HTTPException(status_code=400, detail="Email already exists")
     user_dict = request.dict()
-    user_dict["password"] = hash_password(user_dict["password"])
+    print(user_dict["password"])
+    # user_dict["password"] = hash_password(user_dict["password"])
     result = await tourists_collection.insert_one(user_dict)
     return {"id": str(result.inserted_id)}
 
@@ -32,10 +33,10 @@ async def local_signup(request: LocalSignupRequest):
 # ----------------- Login (tourist or local) -----------------
 @router.post("/login")
 async def login(data: LoginRequest):
-    user = await tourists_collection.find_one({"username": data.username})
+    user = await tourists_collection.find_one({"email": data.email})
     collection = "tourist"
     if not user:
-        user = await locals_collection.find_one({"email": data.username})
+        user = await locals_collection.find_one({"email": data.email})
         collection = "local"
     if not user or not verify_password(data.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")

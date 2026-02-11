@@ -194,17 +194,16 @@ class LocalProfile(BaseModel):
 
 class UserProfile(BaseModel):
     name: str
-    username: str
     email: EmailStr
     password: str
     age: Optional[int] = None
     country: Optional[str] = None
     languages: List[str] = []
     currency: Optional[str] = None
-    app_language: Optional[str] = "English"
-    travel_type: Optional[str] = "solo"  # solo | group | family
+    appLanguage: Optional[str] = "English"
+    travelType: Optional[str] = "solo"  # solo | group | family
     activities: List[str] = []
-    avatar_url: Optional[str] = None
+    avatarUrl: Optional[str] = None
     bio: Optional[str] = None
     wishlist: List[str] = []
     visited: List[str] = []

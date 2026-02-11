@@ -3,7 +3,6 @@ from typing import List, Optional
 
 class TouristSignupRequest(BaseModel):
     name: str
-    username: str
     email: EmailStr
     password: str
     age: Optional[int] = None
