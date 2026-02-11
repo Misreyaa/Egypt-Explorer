@@ -12,7 +12,8 @@ import {
   ArrowRight,
   Compass,
   Bell,
-  Users
+  Users,
+  Bot
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -50,8 +51,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     },
     { 
       id: 'llm', 
-      label: 'Talk to an LLM', 
-      icon: MessageSquare, 
+      label: 'Talk to me', 
+      icon: Bot, 
       description: 'Chat with our AI about Egyptian history and culture.',
       color: 'bg-blue-700' 
     },
@@ -111,13 +112,28 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       <div className="container mx-auto py-8 sm:py-12 md:py-16 px-4">
         <PharaohAnimation />
         
-        <div className="mb-10 text-center max-w-2xl mx-auto">
+        <div className="mb-10 text-center max-w-3xl mx-auto">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
             Ahlan, {user?.profile.name}!
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Where would you like to start your journey today? Choose a path below to explore the wonders of Egypt.
+          <p className="text-muted-foreground text-lg leading-relaxed mb-6">
+            Explore personalized recommendations, cultural lessons, and local connections. 
+            But to truly understand Egypt, we invite you to see it <span className="font-bold text-primary italic">"sans lies, sans bias"</span>.
           </p>
+          
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200 dark:border-red-900/50 p-4 rounded-xl inline-flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
+            <p className="text-sm sm:text-base font-medium">
+              Start your journey with clarity. 
+              <Button 
+                variant="link" 
+                className="px-1.5 h-auto font-bold text-red-600 dark:text-red-400 underline decoration-2 underline-offset-4"
+                onClick={() => onNavigate('bias')}
+              >
+                Try the Bias Detector
+              </Button>
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

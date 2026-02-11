@@ -21,7 +21,10 @@ import { HiddenGemForm } from './components/HiddenGemForm';
 import { NotificationsPage } from './components/NotificationsPage';
 import { LocalRulesPopup } from './components/LocalRulesPopup';
 import { MatchWithLocalPage } from './components/MatchWithLocalPage';
+import { BiasPromoBubble } from './components/BiasPromoBubble';
 import { Toaster } from 'sonner';
+
+import { BiasedSplashScreen } from './components/BiasedSplashScreen';
 
 function AppContent() {
   const { user } = useUser();
@@ -29,6 +32,7 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedLesson, setSelectedLesson] = useState<LessonItem | null>(null);
   const [showLocalRules, setShowLocalRules] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     // Show local rules popup if user is local and hasn't seen it
@@ -37,11 +41,30 @@ function AppContent() {
     }
   }, [user]);
 
+  const handlePageChange = (page: string) => {
+    if (page === currentPage) return;
+    
+    // Trigger splash screen
+    setIsTransitioning(true);
+    
+    // Wait for reading time then switch
+    setTimeout(() => {
+      setCurrentPage(page);
+      setIsTransitioning(false);
+    }, 4000); // 4 seconds to read the text
+  };
+
   if (!user) {
     if (showSignUp) {
       return (
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background">Loading...</div>}>
-          <SignUpWrapper onComplete={() => setShowSignUp(false)} />
+          <SignUpWrapper onComplete={() => {
+            setShowSignUp(false);
+            // Trigger splash on signup completion (implicit transition to home)
+            setIsTransitioning(true);
+            setTimeout(() => setIsTransitioning(false), 4000);
+          }} />
+          <BiasedSplashScreen isVisible={isTransitioning} onDismiss={() => setIsTransitioning(false)} />
         </Suspense>
       );
     }
@@ -54,25 +77,25 @@ function AppContent() {
 
   const handleStartLesson = (lesson: LessonItem) => {
     setSelectedLesson(lesson);
-    setCurrentPage('lesson-detail');
+    handlePageChange('lesson-detail');
   };
 
   const renderPage = () => {
     // For locals, return local home page
     if (user.userType === 'local' && currentPage === 'home') {
-      return <LocalHomePage onNavigate={setCurrentPage} />;
+      return <LocalHomePage onNavigate={handlePageChange} />;
     }
 
     switch (currentPage) {
       case 'home':
-        return <HomePage onNavigate={setCurrentPage} />;
+        return <HomePage onNavigate={handlePageChange} />;
       case 'recommendations':
         return <RecommendationsPage />;
       case 'lessons':
         return <LessonsPage onStartLesson={handleStartLesson} />;
       case 'lesson-detail':
         return selectedLesson ? (
-          <LessonDetailPage lesson={selectedLesson} onBack={() => setCurrentPage('lessons')} />
+          <LessonDetailPage lesson={selectedLesson} onBack={() => handlePageChange('lessons')} />
         ) : (
           <LessonsPage onStartLesson={handleStartLesson} />
         );
@@ -85,9 +108,9 @@ function AppContent() {
       case 'help':
         return <HelpPage />;
       case 'wishlist':
-        return <WishlistPage onNavigate={setCurrentPage} />;
+        return <WishlistPage onNavigate={handlePageChange} />;
       case 'profile':
-        return <UserProfilePage onNavigate={setCurrentPage} />;
+        return <UserProfilePage onNavigate={handlePageChange} />;
       case 'comfort-zone':
         return <ComfortZonePage />;
       case 'local-blog':
@@ -97,24 +120,31 @@ function AppContent() {
       case 'notifications':
         return <NotificationsPage />;
       case 'earnings':
-        return <UserProfilePage onNavigate={setCurrentPage} />;
+        return <UserProfilePage onNavigate={handlePageChange} />;
       case 'match-local':
         return <MatchWithLocalPage />;
       default:
         return user.userType === 'local' 
-          ? <LocalHomePage onNavigate={setCurrentPage} />
-          : <HomePage onNavigate={setCurrentPage} />;
+          ? <LocalHomePage onNavigate={handlePageChange} />
+          : <HomePage onNavigate={handlePageChange} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar currentPage={currentPage} onNavigate={setCurrentPage} />
+      <Navbar currentPage={currentPage} onNavigate={handlePageChange} />
       <main>
         <Suspense fallback={<div className="container mx-auto py-12 px-4">Loading page...</div>}>
           {renderPage()}
         </Suspense>
       </main>
+      <BiasPromoBubble currentPage={currentPage} onNavigate={handlePageChange} />
+      <BiasedSplashScreen isVisible={isTransitioning} onDismiss={(navigateToBias) => {
+        setIsTransitioning(false);
+        if (navigateToBias) {
+          setCurrentPage('bias');
+        }
+      }} />
       <Toaster position="top-center" expand={false} richColors />
       {showLocalRules && <LocalRulesPopup open={showLocalRules} onClose={() => setShowLocalRules(false)} />}
     </div>

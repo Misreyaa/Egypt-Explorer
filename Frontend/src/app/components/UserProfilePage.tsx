@@ -8,6 +8,7 @@ import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Combobox } from './ui/combobox';
+import { MultiSelectCombobox } from './ui/multi-select-combobox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { UserProfile, LocalProfile, useUser } from '../context/UserContext';
 import { Users, User, Home, Palmtree, Utensils, Camera, Music, Mountain, Ship, ShoppingBag, Globe, Languages, Coins, Save, Heart, ArrowRight, Wallet, DollarSign } from 'lucide-react';
@@ -41,26 +42,21 @@ export const UserProfilePage: React.FC<{ onNavigate?: (page: string) => void }> 
   const isTourist = user.userType === 'tourist';
 
   const presetAvatars = [
-    {
-      id: 'bw-curly',
-      url: 'https://images.unsplash.com/photo-1763742937405-1b172cfa6cd7?q=80&w=400&auto=format&fit=crop',
-      label: 'B&W Curly'
-    },
-    {
-      id: 'blue-straight',
-      url: 'https://images.unsplash.com/photo-1678544119978-8e253d5f3ecb?q=80&w=400&auto=format&fit=crop',
-      label: 'Blue Eyes Straight'
-    },
-    {
-      id: 'brown-man',
-      url: 'https://images.unsplash.com/photo-1723701170346-f025b9f85906?q=80&w=400&auto=format&fit=crop',
-      label: 'Brown Man'
-    },
-    {
-      id: 'brown-woman',
-      url: 'https://images.unsplash.com/photo-1748188166844-d0cdc843499a?q=80&w=400&auto=format&fit=crop',
-      label: 'Brown Woman'
-    }
+    { id: 'm1', url: 'https://i.ibb.co/nN9GGZrN/ccc.png', label: 'King 1' },
+      { id: 'm2', url: 'https://i.ibb.co/vvs7gNBP/Gemini-Generated-Image-lbyldslbyldslbyl.png', label: 'King 2' },
+      { id: 'm3', url: 'https://i.ibb.co/TxqDyYP2/Gemini-Generated-Image-lbyldslbyldslbyl1.png', label: 'King 3' },
+      { id: 'm4', url: 'https://i.ibb.co/SwXjVLNg/Gemini-Generated-Image-lbyldslbylwdslbyl.png', label: 'King 4' },
+      { id: 'm5', url: 'https://i.ibb.co/zWhL0d3N/Gemini-Generated-Image-lbyldslbyldslbylkk.png', label: 'King 5' },
+      { id: 'm6', url: 'https://i.ibb.co/5WLMHGsT/s.png', label: 'King 6' },
+    
+      { id: 'w1', url: 'https://i.ibb.co/6RHND89s/Gemini-Generated-Image-lbyldslbyldslbylxx.png', label: 'Queen 1' },
+      { id: 'w2', url: 'https://i.ibb.co/LD035c81/Gemini-Generated-Image-lbyldslbyldslbylww.png', label: 'Queen 2' },
+      { id: 'w3', url: 'https://i.ibb.co/N5GH4Zs/Gemini-Generated-Image-lbyldslbyldslbylx.png', label: 'Queen 3' },
+      { id: 'w4', url: 'https://i.ibb.co/1JRS0K61/Gemini-Generated-Image-lbyldslbyldslbylq.png', label: 'Queen 4' },
+      { id: 'w5', url: 'https://i.ibb.co/996Pkf2q/Gemini-Generated-Image-lbyldslbyldslbylnn.png', label: 'Queen 5' },
+      { id: 'w6', url: 'https://i.ibb.co/TD0qJSkz/Gemini-Generated-Image-lbyldslbyldslbylc.png', label: 'Queen 6' },
+    
+ 
   ];
 
   const pharaohAvatars = [
@@ -192,7 +188,7 @@ export const UserProfilePage: React.FC<{ onNavigate?: (page: string) => void }> 
             
             <div className="space-y-4">
               <Label className="text-sm font-medium text-muted-foreground">Quick Select Avatar</Label>
-              <div className="grid grid-cols-4 sm:grid-cols-4 gap-4 max-w-md">
+              <div className="grid grid-cols-6 sm:grid-cols-6 gap-3 max-w-md">
                 {presetAvatars.map((preset) => (
                   <button
                     key={preset.id}
@@ -293,13 +289,13 @@ export const UserProfilePage: React.FC<{ onNavigate?: (page: string) => void }> 
                   </div>
                   <div>
                     <Label htmlFor="language" className="flex items-center gap-2">
-                      <Languages className="h-4 w-4" /> Native Language
+                      <Languages className="h-4 w-4" /> Spoken Languages
                     </Label>
-                    <Combobox
+                    <MultiSelectCombobox
                       options={languages}
-                      value={'language' in formData ? formData.language : ''}
-                      onValueChange={(val) => setFormData({ ...formData, language: val })}
-                      placeholder="Select language"
+                      selected={'languages' in formData ? formData.languages || [] : []}
+                      onChange={(val) => setFormData({ ...formData, languages: val } as any)}
+                      placeholder="Select languages"
                       searchPlaceholder="Search languages..."
                       emptyText="No language found."
                     />

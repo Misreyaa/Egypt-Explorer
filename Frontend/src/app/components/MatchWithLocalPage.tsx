@@ -35,7 +35,7 @@ interface TouristProfile {
   name: string;
   age: string;
   country: string;
-  language: string;
+  languages: string[];
   travelType: 'group' | 'solo' | 'family';
   activities: string[];
   avatarUrl: string;
@@ -158,7 +158,7 @@ const mockTouristProfiles: TouristProfile[] = [
     name: 'Sarah Johnson',
     age: '29',
     country: 'United States',
-    language: 'English',
+    languages: ['English'],
     travelType: 'solo',
     activities: ['History', 'Photography', 'Museum', 'Food'],
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
@@ -170,7 +170,7 @@ const mockTouristProfiles: TouristProfile[] = [
     name: 'Marco Rossi',
     age: '45',
     country: 'Italy',
-    language: 'Italian',
+    languages: ['Italian', 'English'],
     travelType: 'family',
     activities: ['Beach', 'Culture', 'Food', 'Shopping'],
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop',
@@ -182,7 +182,7 @@ const mockTouristProfiles: TouristProfile[] = [
     name: 'Emma Thompson',
     age: '32',
     country: 'United Kingdom',
-    language: 'English',
+    languages: ['English'],
     travelType: 'solo',
     activities: ['Adventure', 'Nature', 'Beach', 'Photography'],
     avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop',
@@ -194,7 +194,7 @@ const mockTouristProfiles: TouristProfile[] = [
     name: 'Pierre Dubois',
     age: '38',
     country: 'France',
-    language: 'French',
+    languages: ['French', 'English'],
     travelType: 'solo',
     activities: ['Art', 'Culture', 'Food', 'Photography'],
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop',
@@ -206,7 +206,7 @@ const mockTouristProfiles: TouristProfile[] = [
     name: 'Hans Mueller',
     age: '52',
     country: 'Germany',
-    language: 'German',
+    languages: ['German', 'English'],
     travelType: 'family',
     activities: ['History', 'Museum', 'Architecture', 'Culture'],
     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop',
@@ -218,7 +218,7 @@ const mockTouristProfiles: TouristProfile[] = [
     name: 'Lisa Anderson',
     age: '27',
     country: 'United States',
-    language: 'English',
+    languages: ['English', 'Spanish'],
     travelType: 'group',
     activities: ['Food', 'Shopping', 'Culture', 'Nightlife'],
     avatarUrl: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop',
@@ -230,7 +230,7 @@ const mockTouristProfiles: TouristProfile[] = [
     name: 'Maria Garcia',
     age: '35',
     country: 'Spain',
-    language: 'Spanish',
+    languages: ['Spanish', 'English'],
     travelType: 'solo',
     activities: ['History', 'Architecture', 'Culture', 'Food'],
     avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop',
@@ -242,7 +242,7 @@ const mockTouristProfiles: TouristProfile[] = [
     name: 'Ivan Petrov',
     age: '41',
     country: 'Russia',
-    language: 'Russian',
+    languages: ['Russian', 'English'],
     travelType: 'family',
     activities: ['Beach', 'Adventure', 'Sports', 'Nature'],
     avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop',
@@ -260,7 +260,7 @@ export const MatchWithLocalPage: React.FC = () => {
   
   // If viewing as tourist - show local profiles
   if (!isLocal) {
-    const touristLanguage = user?.userType === 'tourist' ? user.profile.language : 'English';
+    const touristLanguages = user?.userType === 'tourist' ? user.profile.languages || ['English'] : ['English'];
     const touristInterests = user?.userType === 'tourist' ? user.profile.activities : [];
 
     // Calculate match score for each local
@@ -270,9 +270,10 @@ export const MatchWithLocalPage: React.FC = () => {
         const matchReasons: string[] = [];
 
         // Language match (highest priority - 40 points)
-        if (local.spoken_languages.includes(touristLanguage)) {
+        const sharedLanguages = local.spoken_languages.filter(lang => touristLanguages.includes(lang));
+        if (sharedLanguages.length > 0) {
           matchScore += 40;
-          matchReasons.push(`Speaks ${touristLanguage}`);
+          matchReasons.push(`Speaks ${sharedLanguages.join(', ')}`);
         }
 
         // Interest match (30 points total)
@@ -297,7 +298,7 @@ export const MatchWithLocalPage: React.FC = () => {
           matchingInterests
         };
       }).sort((a, b) => b.matchScore - a.matchScore);
-    }, [touristLanguage, touristInterests]);
+    }, [touristLanguages, touristInterests]);
 
     // Filter profiles
     const filteredProfiles = useMemo(() => {
@@ -380,7 +381,7 @@ export const MatchWithLocalPage: React.FC = () => {
           <div className="text-center mb-6">
             <p className="text-sm text-muted-foreground">
               Showing <span className="font-semibold text-primary">{filteredProfiles.length}</span> locals 
-              matching your profile • Your language: <span className="font-semibold">{touristLanguage}</span>
+              matching your profile • Your languages: <span className="font-semibold">{touristLanguages.join(', ')}</span>
               {touristInterests.length > 0 && (
                 <> • Your interests: <span className="font-semibold">{touristInterests.join(', ')}</span></>
               )}
@@ -451,7 +452,7 @@ export const MatchWithLocalPage: React.FC = () => {
                         {local.spoken_languages.map(lang => (
                           <Badge 
                             key={lang} 
-                            variant={lang === touristLanguage ? 'default' : 'secondary'}
+                            variant={touristLanguages.includes(lang) ? 'default' : 'secondary'}
                             className="text-xs"
                           >
                             {lang}
@@ -567,9 +568,10 @@ export const MatchWithLocalPage: React.FC = () => {
       const matchReasons: string[] = [];
 
       // Language match (highest priority - 40 points)
-      if (localLanguages.includes(tourist.language)) {
+      const sharedLanguages = localLanguages.filter(lang => tourist.languages.includes(lang));
+      if (sharedLanguages.length > 0) {
         matchScore += 40;
-        matchReasons.push(`Speaks ${tourist.language}`);
+        matchReasons.push(`Speaks ${sharedLanguages.join(', ')}`);
       }
 
       // City interest match (30 points)
