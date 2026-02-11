@@ -150,7 +150,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fire-and-forget: no await, just handle result in then/catch
       axios
         .post<{ id: string }>(
-          'http://127.0.0.1:8080/tourists/signup',
+          'http://127.0.0.1:8080/tourist/signup',
           payload,
           { headers: { 'Content-Type': 'application/json' } }
         )

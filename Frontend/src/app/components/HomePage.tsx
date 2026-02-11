@@ -109,6 +109,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Breaking News Bar */}
+      <div className="bg-red-700 dark:bg-red-900 text-white py-3 px-4 sticky top-0 z-50 shadow-lg">
+        <div className="container mx-auto flex items-center justify-center gap-3 flex-wrap">
+          <ShieldAlert className="h-5 w-5 animate-pulse" />
+          <p className="text-sm sm:text-base font-bold text-center">
+            <span className="uppercase tracking-wide">Breaking Bias:</span> Don't let stereotypes shape your view.
+          </p>
+          <Button 
+            variant="secondary"
+            size="sm"
+            className="bg-white text-red-700 hover:bg-gray-100 font-bold text-xs sm:text-sm px-4"
+            onClick={() => onNavigate('bias')}
+          >
+            Try Bias Detector →
+          </Button>
+        </div>
+      </div>
+
       <div className="container mx-auto py-8 sm:py-12 md:py-16 px-4">
         <PharaohAnimation />
         
