@@ -248,15 +248,16 @@ At a high level, `/query` has two paths: a fast **structured-facts path** for ti
 2. **General RAG path (for all other queries or when step 1 fails)**  
    1. **Embed query** using the sentence-transformers model into a dense vector.
    2. **Apply hard filters** (`city`, `category`, `wheelchair_only`) at Qdrant level; only matching points are eligible.
-   3. **Vector search** in Qdrant on the filtered subset to get top‑`k` chunks.
-   4. **Build context** string from retrieved chunks (`build_context` in `app/generation.py`).
-   5. **Generate answer**:
+   3. **Vector search** in Qdrant on the filtered subset to get a wider **candidate set** (e.g. top‑20).
+   4. **Rerank candidates** with a cross‑encoder (`BAAI/bge-reranker-base` via `app/reranker.py`) to keep the top‑`k` most relevant chunks for the final answer.
+   5. **Build context** string from the reranked chunks (`build_context` in `app/generation.py`).
+   6. **Generate answer**:
       - If `GROQ_API_KEY` is set, call Groq and ask it to answer *only* from the provided context.
       - If not, fall back to a rule-based answer that:
         - Tries to pick the place whose name best matches the query (e.g. “Abdeen Palace”).
         - For fee/time questions, answers from the specific fields (`entry_fee`, `opening_hours`, `average_visit_duration`, etc.) for that place if present.
         - Otherwise, summarizes the most relevant chunks for that place.
-   6. If **no points match the filters**, the API returns a safe, explicit “no results” message with an empty `sources` array instead of guessing.
+   7. If **no points match the filters**, the API returns a safe, explicit “no results” message with an empty `sources` array instead of guessing.
 
 ### CRUD routers (MongoDB)
 
@@ -276,3 +277,22 @@ They use Pydantic models in `app/models.py` and store data in MongoDB collection
 - **Ingestion must run before meaningful RAG queries** (so Qdrant has vectors).
 - Qdrant point IDs must be UUID/uint — ingestion uses UUIDs.
 - Never commit secrets. Put credentials in env vars / `.env` (and add `.env` to `.gitignore`).
+
+### Time-based availability filtering
+
+- During ingestion, numeric `opening_hour` / `closing_hour` fields are normalized to:
+  - `open_minutes = int(opening_hour * 60)`
+  - `close_minutes = int(closing_hour * 60)`  
+  and stored back into MongoDB as `open_minutes` / `close_minutes`.
+- When a query clearly specifies a time window (e.g. *"places open from 9 to 20"*), the `/query` endpoint:
+  - Parses the two hour values into `user_start` / `user_end` (minutes).
+  - Runs a direct Mongo filter:
+
+    ```json
+    {
+      "open_minutes":  { "$lte": user_end },
+      "close_minutes": { "$gte": user_start }
+    }
+    ```
+
+  - This returns **all places whose opening interval overlaps the requested window at all** (not only those open for the entire duration), and responds with a deterministic list of matching places without calling the LLM.

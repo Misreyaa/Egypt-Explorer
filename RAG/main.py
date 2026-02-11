@@ -4,6 +4,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.models import QueryRequest, QueryResponse, PlaceSummary
 from app.retrieval import retrieve
+from app.reranker import rerank
 from app.generation import build_context, generate, build_rule_based_answer
 from app.routes import destinations, tourists, locals, posts, shops, vehicles
 from app.auth import create_access_token, get_current_user  # get_current_user verifies JWT
@@ -388,14 +389,19 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
     # 2) Activity‑focused vs general description search
     chunk_type = "activity" if _looks_like_activity_intent(req.query) else "description"
 
+    # Retrieve a wider candidate set, then rerank down to the requested limit.
+    initial_k = max(req.limit, 20)
     results = retrieve(
         req.query,
-        top_k=req.limit,
+        top_k=initial_k,
         wheelchair_only=req.wheelchair_only,
         city=req.city,
         category=req.category,
         chunk_type=chunk_type,
     )
+
+    # Cross-encoder reranking (only for semantic search paths).
+    results = rerank(req.query, results, top_k=req.limit)
 
     # Guardrail: if filters eliminate everything, be honest instead of fabricating
     if not results:
