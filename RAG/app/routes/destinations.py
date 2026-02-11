@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from bson import ObjectId
 from ..models import Destination
 from ..db import destinations_collection
 
@@ -7,7 +8,7 @@ router = APIRouter()
 @router.post("/")
 async def add_destination(destination: Destination):
     result = await destinations_collection.insert_one(destination.dict())
-    return {"id": str(result.inserted_id)}
+    return {"id": str(result.inserted_id), "place_id": destination.place_id}
 
 @router.get("/")
 async def get_destinations():
@@ -17,9 +18,18 @@ async def get_destinations():
         destinations.append(d)
     return destinations
 
-@router.get("/{place_id}")
-async def get_destination(place_id: str):
-    dest = await destinations_collection.find_one({"place_id": place_id})
+@router.get("/{destination_id}")
+async def get_destination(destination_id: str):
+    # Try to find by place_id first
+    dest = await destinations_collection.find_one({"place_id": destination_id})
+    
+    # If not found by place_id, try by MongoDB _id
+    if not dest:
+        try:
+            dest = await destinations_collection.find_one({"_id": ObjectId(destination_id)})
+        except:
+            pass
+    
     if not dest:
         raise HTTPException(status_code=404, detail="Destination not found")
     dest["_id"] = str(dest["_id"])
