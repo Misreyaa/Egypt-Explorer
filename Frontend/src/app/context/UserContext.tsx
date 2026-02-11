@@ -61,7 +61,7 @@ interface UserContextType {
   user: User | null;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
-  signIn: (email: string, password: string) => boolean;
+  signIn: (email: string, password: string) => Promise<boolean>;
   signUp: (user: User, email: string, password: string) => void;
   signOut: () => void;
   updateProfile: (user: User) => void;
@@ -179,20 +179,43 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
 
+  const signIn = useCallback(
+  async (email: string, password: string): Promise<boolean> => {
+    try {
+      const res = await fetch("http://127.0.0.1:8080/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
+      if (!res.ok) {
+        console.error("Login failed:", res.status);
+        return false;
+      }
 
-  const signIn = useCallback((email: string, password: string): boolean => {
-    const storedPassword = localStorage.getItem(`auth_${email}`);
-    if (storedPassword === password) {
-      const userData = localStorage.getItem(`user_${email}`);
-      if (userData) {
-        setUser(JSON.parse(userData));
-        localStorage.setItem('currentUser', email);
+      const data = await res.json();
+      if (data.access_token) {
+        localStorage.setItem("authToken", data.access_token);
+        if (data.user) {
+          localStorage.setItem(`user_${email}`, JSON.stringify(data.user));
+          setUser(data.user);
+        }
+        localStorage.setItem("currentUser", email);
         return true;
       }
+
+      return false;
+    } catch (err) {
+      console.error("Login error:", err);
+      return false;
     }
-    return false;
-  }, []);
+  },
+  []
+);
+
 
   const signOut = useCallback(() => {
     localStorage.removeItem('currentUser');

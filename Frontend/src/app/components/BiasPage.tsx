@@ -62,35 +62,14 @@ export const BiasPage: React.FC = () => {
     }
   };
 
-  const analyzeText = async () => {
-    setIsAnalyzing(true);
-    setAnalyzed(false);
+  const analyzeText = async (text: string) => {
+    const res = await fetch("http://localhost:8000/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
 
-    // Mock delay for AI analysis
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const detectedBiases: BiasCheck[] = [];
-    const lowerText = inputText.toLowerCase();
-
-    if (lowerText.includes('exotic') || lowerText.includes('mysterious') || lowerText.includes('ancient land')) {
-      detectedBiases.push(commonBiases[1]);
-    }
-
-    if (lowerText.includes('all egyptians') || lowerText.includes('they all') || lowerText.includes('live like')) {
-      detectedBiases.push(commonBiases[0]);
-    }
-
-    if (lowerText.includes('poor') || lowerText.includes('poverty') && !lowerText.includes('some')) {
-      detectedBiases.push(commonBiases[2]);
-    }
-
-    if ((lowerText.includes('muslim') || lowerText.includes('islamic')) && lowerText.includes('all')) {
-      detectedBiases.push(commonBiases[3]);
-    }
-
-    setResults(detectedBiases);
-    setAnalyzed(true);
-    setIsAnalyzing(false);
+    return await res.json();
   };
 
   const getSeverityColor = (severity: string) => {
@@ -138,7 +117,7 @@ export const BiasPage: React.FC = () => {
               />
               <div className="flex gap-2">
                 <Button 
-                  onClick={analyzeText} 
+                  onClick={() => analyzeText(inputText)} 
                   disabled={!inputText.trim() || isAnalyzing} 
                   className="flex-1"
                 >
