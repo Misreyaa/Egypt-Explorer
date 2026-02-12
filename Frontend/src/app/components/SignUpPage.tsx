@@ -490,7 +490,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onComplete, initialEmail
                       <Button
                         variant="destructive"
                         onClick={handleRemovePhoto}
-                        className="bg-red-900/20 text-red-500 hover:bg-red-900/30 border-red-500/20"
+                        className="bg-red-900/20 text-red-900 hover:bg-red-900/30 border-red-900/20"
                       >
                         Remove Photo
                       </Button>

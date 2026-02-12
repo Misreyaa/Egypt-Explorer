@@ -44,7 +44,7 @@ const metrics = [
   { level: 2, label: 'Opinionated', range: '21–40%', color: 'bg-sky-500', text: 'text-sky-600' },
   { level: 3, label: 'Leaning', range: '41–60%', color: 'bg-amber-500', text: 'text-amber-600' },
   { level: 4, label: 'Biased', range: '61–80%', color: 'bg-orange-500', text: 'text-orange-600' },
-  { level: 5, label: 'Highly Biased', range: '81–100%', color: 'bg-red-500', text: 'text-red-500' },
+  { level: 5, label: 'Highly Biased', range: '81–100%', color: 'bg-red-900', text: 'text-red-900' },
 ];
 
 const mockOutputs: AnalysisResponse[] = [
@@ -178,7 +178,7 @@ export const BiasPage: React.FC = () => {
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+          <div className="h-12 w-12 bg-gradient-to-br from-red-900 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
             <ShieldAlert className="h-6 w-6 text-white" />
           </div>
           <div>

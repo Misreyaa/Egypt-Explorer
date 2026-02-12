@@ -59,7 +59,7 @@ export const BiasPromoBubble: React.FC<BiasPromoBubbleProps> = ({ onNavigate, cu
 
             <div className="flex items-start gap-4">
               <div className="bg-red-100 dark:bg-red-900/30 p-2.5 rounded-xl shrink-0">
-                <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400 animate-pulse" />
+                <ShieldAlert className="h-6 w-6 text-red-900 dark:text-red-900 animate-pulse" />
               </div>
               <div className="space-y-1">
                 <h3 className="font-bold text-lg leading-tight text-primary">Sans myths, sans bias</h3>

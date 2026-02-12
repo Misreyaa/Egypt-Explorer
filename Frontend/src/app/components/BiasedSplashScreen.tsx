@@ -33,16 +33,16 @@ export const BiasedSplashScreen: React.FC<BiasedSplashScreenProps> = ({ isVisibl
           >
             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
               <div className="bg-red-900/10 p-3 rounded-full">
-                <AlertTriangle className="h-8 w-8 text-red-500" />
+                <AlertTriangle className="h-8 w-8 text-red-900" />
               </div>
 
               <div className="space-y-3">
-                <blockquote className="font-serif text-base md:text-lg leading-relaxed italic text-brown-dark/90 border-l-3 border-red-700/30 pl-4 py-1">
+                <blockquote className="font-serif text-base md:text-lg leading-relaxed italic text-brown-dark/90 border-l-3 border-red-900/30 pl-4 py-1">
                   "An Egyptian man jumped on the roof of my moving cab and tried to reach his hand through my cracked window. The driver was swearing and swerving trying to get him off the damn roof. So yeah Egypt is really as bad as they say it is in terms of safety and chaos."
                 </blockquote>
                 
                 <div className="flex flex-col items-center gap-1">
-                  <div className="flex items-center gap-2 text-red-700 font-bold uppercase tracking-tighter text-xs">
+                  <div className="flex items-center gap-2 text-red-900 font-bold uppercase tracking-tighter text-xs">
                     <ShieldAlert className="h-3.5 w-3.5" />
                     Warning: Biased Content
                   </div>
@@ -55,7 +55,7 @@ export const BiasedSplashScreen: React.FC<BiasedSplashScreenProps> = ({ isVisibl
               <div className="pt-2 flex flex-col gap-2 w-full">
                 <Button 
                   onClick={() => onDismiss && onDismiss(true)}
-                  className="bg-red-700 hover:bg-red-800 text-white w-full py-4 rounded-md text-sm font-semibold shadow-md transition-transform active:scale-95"
+                  className="bg-red-900 hover:bg-red-900 text-white w-full py-4 rounded-md text-sm font-semibold shadow-md transition-transform active:scale-95"
                 >
                   Try our Bias Detector
                 </Button>

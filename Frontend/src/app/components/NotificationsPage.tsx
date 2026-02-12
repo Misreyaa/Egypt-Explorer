@@ -133,7 +133,7 @@ export const NotificationsPage: React.FC = () => {
 
   const getIconColor = (iconType: string) => {
     switch (iconType) {
-      case 'heart': return 'bg-red-500';
+      case 'heart': return 'bg-red-900';
       case 'message': return 'bg-blue-500';
       case 'mappin': return 'bg-green-500';
       case 'star': return 'bg-yellow-500';
@@ -154,7 +154,7 @@ export const NotificationsPage: React.FC = () => {
                 <div className="h-12 w-12 bg-primary rounded-full flex items-center justify-center relative">
                   <Bell className="h-6 w-6 text-white" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-red-900 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                       {unreadCount}
                     </span>
                   )}

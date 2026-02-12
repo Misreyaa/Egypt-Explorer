@@ -55,7 +55,7 @@ const posts: Post[] = [
     author: 'Sara Abdelhady',
     authorAvatar: 'https://scontent.fcai19-3.fna.fbcdn.net/v/t39.30808-6/436405936_122097062930281504_1162436220330571068_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=bAExCsS69w4Q7kNvwF_7laH&_nc_oc=Adkz8i6v4_TmJKTJgxFFHIEuFuFVxn5m97KaRFivRK0po8041O-FM2ADqncfAMG4dXk&_nc_zt=23&_nc_ht=scontent.fcai19-3.fna&_nc_gid=wKiDgYh-wMCRLbydz2vfyw&oh=00_AfvxAMdeBqrNXiQyNZ1Zfy7SJjlQWHaL5BMKRB3DzzM6Gg&oe=69937E9D', 
     location: 'Caio, Egypt',
-    image: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?auto=format&fit=crop&q=80&w=1000',
+    image: 'https://i.ibb.co/VczZ1BPm/Screenshot-2026-02-12-131616.png',
     caption: 'A look at Egyptian streets of Egypt. #EGYREAL #MORNING',
     likes: '0',
     comments: 0,
@@ -69,14 +69,14 @@ const posts: Post[] = [
     author: 'habibamostafakena',
     authorAvatar: 'https://p16-sign-sg.tiktokcdn.com/tos-alisg-avt-0068/afced9b29f019aff75572932460e61c4~tplv-tiktokx-cropcenter:1080:1080.jpeg?dr=14579&refresh_token=cd6e3bf2&x-expires=1771059600&x-signature=2AGEE%2BDXFHYJDCrSiwdGQVlX79g%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=my',
     location: 'Cairo, Egypt',
-    image: 'https://images.unsplash.com/photo-1572252009286-268acec5ca0a?auto=format&fit=crop&q=80&w=1000',
+    image: 'https://i.ibb.co/wFSZ1nCD/Screenshot-2026-02-12-131747.png',
     caption: '#EGYREAL',
     likes: '8.7k',
     comments: 124,
     tags: ['EGYREAL'],
     timestamp: '2 hours ago',
     platform: 'tiktok',
-    postUrl: 'https://www.facebook.com/share/r/1ErUjfShdu/',
+    postUrl: 'https://www.tiktok.com/@habibamostafakena/video/7605895312204516616?_r=1&_t=ZS-93r65QRBI5n',
   },
 ];
 
@@ -177,7 +177,7 @@ export const EgyRealPage: React.FC = () => {
               <CardContent className="p-5">
                 <div className="flex items-center gap-4 mb-4">
                   <Button variant="ghost" size="sm" className="h-9 px-0 hover:bg-transparent" onClick={() => toggleLike(post.id)}>
-                    <Heart className={`h-6 w-6 mr-1.5 ${likedPosts.has(post.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                    <Heart className={`h-6 w-6 mr-1.5 ${likedPosts.has(post.id) ? 'fill-red-900 text-red-900' : ''}`} />
                     <span className="text-sm font-bold">{post.likes}</span>
                   </Button>
                   <Button variant="ghost" size="sm" className="h-9 px-0 hover:bg-transparent">

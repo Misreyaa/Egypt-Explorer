@@ -36,7 +36,7 @@ export const WishlistPage: React.FC<{
       <div className="container mx-auto py-6 sm:py-8 md:py-12 px-4">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            <Heart className="h-8 w-8 text-red-500 fill-current" />
+            <Heart className="h-8 w-8 text-red-900 fill-current" />
             Your Wishlist
           </h1>
           <p className="text-muted-foreground mt-2">

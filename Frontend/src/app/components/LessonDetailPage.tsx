@@ -327,10 +327,10 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({ lesson, onBa
               <div className="space-y-6 py-4">
                 <div className="text-center space-y-4">
                   <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full ${
-                    percentage >= 66 ? 'bg-pine-primary/20' : percentage >= 33 ? 'bg-amber-500/20' : 'bg-red-500/20'
+                    percentage >= 66 ? 'bg-pine-primary/20' : percentage >= 33 ? 'bg-amber-500/20' : 'bg-red-900/20'
                   }`}>
                     <span className={`text-4xl font-bold ${
-                      percentage >= 66 ? 'text-pine-primary' : percentage >= 33 ? 'text-amber-600' : 'text-red-500'
+                      percentage >= 66 ? 'text-pine-primary' : percentage >= 33 ? 'text-amber-600' : 'text-red-900'
                     }`}>
                       {score}/{quizQuestions.length}
                     </span>
@@ -349,13 +349,13 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({ lesson, onBa
                     <div key={index} className={`p-4 rounded-lg border ${
                       selectedAnswers[index] === q.correctAnswer 
                         ? 'border-pine-primary bg-pine-primary/5' 
-                        : 'border-red-500 bg-red-500/5'
+                        : 'border-red-900 bg-red-900/5'
                     }`}>
                       <div className="flex items-start gap-3">
                         {selectedAnswers[index] === q.correctAnswer ? (
                           <CheckCircle2 className="h-5 w-5 text-pine-primary shrink-0 mt-0.5" />
                         ) : (
-                          <X className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                          <X className="h-5 w-5 text-red-900 shrink-0 mt-0.5" />
                         )}
                         <div className="flex-1">
                           <p className="font-medium text-foreground text-sm mb-1">{q.question}</p>

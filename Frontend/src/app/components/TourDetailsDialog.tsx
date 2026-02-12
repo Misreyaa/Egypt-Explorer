@@ -223,7 +223,7 @@ export const TourDetailsDialog: React.FC<
       <Button 
         variant={isInWishlist ? "default" : "outline"}
         className={`flex-1 h-12 px-2 sm:px-4 text-xs sm:text-sm ${
-          isInWishlist ? 'bg-red-500 text-white' : 'border-red-200 text-red-500'
+          isInWishlist ? 'bg-red-900 text-white' : 'border-red-200 text-red-900'
         }`} 
         onClick={() => handleToggleWishlist(destination.id)}
       >

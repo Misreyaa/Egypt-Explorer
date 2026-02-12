@@ -220,7 +220,7 @@ export const UserProfilePage: React.FC<{ onNavigate?: (page: string) => void }> 
                     {formData.avatarUrl && (
                       <button 
                         onClick={handleRemovePhoto}
-                        className="text-sm text-red-500 hover:underline"
+                        className="text-sm text-red-900 hover:underline"
                       >
                         Remove
                       </button>
@@ -454,7 +454,7 @@ export const UserProfilePage: React.FC<{ onNavigate?: (page: string) => void }> 
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-xl text-foreground flex items-center gap-2">
-                <Heart className="h-5 w-5 text-red-500" />
+                <Heart className="h-5 w-5 text-red-900" />
                 My Wishlist ({wishlistDestinations.length})
               </CardTitle>
               <CardDescription>Quick view of your saved Egyptian experiences</CardDescription>

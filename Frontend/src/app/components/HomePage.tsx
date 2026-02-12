@@ -47,7 +47,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       label: 'Bias Detector', 
       icon: ShieldAlert, 
       description: 'Learn to identify stereotypes and cultural misrepresentations.',
-      color: 'bg-red-700' 
+      color: 'bg-red-900' 
     },
     { 
       id: 'llm', 
@@ -75,7 +75,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       label: 'Wishlist', 
       icon: Sparkles, 
       description: 'Your saved Egyptian experiences and hidden gems.',
-      color: 'bg-red-500' 
+      color: 'bg-red-900' 
     },
     { 
       id: 'comfort-zone', 
@@ -110,7 +110,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Breaking News Bar */}
-      <div className="bg-red-700 dark:bg-red-900 text-white py-3 px-4 sticky top-0 z-50 shadow-lg">
+      <div className="bg-red-900 dark:bg-red-900 text-white py-3 px-4 sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto flex items-center justify-center gap-3 flex-wrap">
           <ShieldAlert className="h-5 w-5 animate-pulse" />
           <p className="text-sm sm:text-base font-bold text-center">
@@ -119,7 +119,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           <Button 
             variant="secondary"
             size="sm"
-            className="bg-white text-red-700 hover:bg-gray-100 font-bold text-xs sm:text-sm px-4"
+            className="bg-white text-red-900 hover:bg-gray-100 font-bold text-xs sm:text-sm px-4"
             onClick={() => onNavigate('bias')}
           >
             Try Bias Detector →
@@ -140,12 +140,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           </p>
           
           <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200 dark:border-red-900/50 p-4 rounded-xl inline-flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
+            <ShieldAlert className="h-5 w-5 text-red-900 dark:text-red-900" />
             <p className="text-sm sm:text-base font-medium">
               Start your journey with clarity. 
               <Button 
                 variant="link" 
-                className="px-1.5 h-auto font-bold text-red-600 dark:text-red-400 underline decoration-2 underline-offset-4"
+                className="px-1.5 h-auto font-bold text-red-900 dark:text-red-900 underline decoration-2 underline-offset-4"
                 onClick={() => onNavigate('bias')}
               >
                 Try the Bias Detector

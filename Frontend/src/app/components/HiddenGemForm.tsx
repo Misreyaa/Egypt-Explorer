@@ -275,7 +275,7 @@ export const HiddenGemForm: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name">
-                      Location Name <span className="text-red-500">*</span>
+                      Location Name <span className="text-red-900">*</span>
                     </Label>
                     <Input
                       id="name"
@@ -288,7 +288,7 @@ export const HiddenGemForm: React.FC = () => {
 
                   <div>
                     <Label htmlFor="category">
-                      Category <span className="text-red-500">*</span>
+                      Category <span className="text-red-900">*</span>
                     </Label>
                     <Select value={formData.category} onValueChange={(val) => handleInputChange('category', val)}>
                       <SelectTrigger>
@@ -304,7 +304,7 @@ export const HiddenGemForm: React.FC = () => {
 
                   <div>
                     <Label htmlFor="sub_category">
-                      Sub Category <span className="text-red-500">*</span>
+                      Sub Category <span className="text-red-900">*</span>
                     </Label>
                     <Input
                       id="sub_category"
@@ -317,7 +317,7 @@ export const HiddenGemForm: React.FC = () => {
 
                   <div>
                     <Label htmlFor="city">
-                      City <span className="text-red-500">*</span>
+                      City <span className="text-red-900">*</span>
                     </Label>
                     <Input
                       id="city"
@@ -330,7 +330,7 @@ export const HiddenGemForm: React.FC = () => {
 
                   <div>
                     <Label htmlFor="governorate">
-                      Governorate <span className="text-red-500">*</span>
+                      Governorate <span className="text-red-900">*</span>
                     </Label>
                     <Select value={formData.governorate} onValueChange={(val) => handleInputChange('governorate', val)}>
                       <SelectTrigger>

@@ -385,7 +385,7 @@ export const MatchWithLocalPage: React.FC = () => {
                     {local.matchingInterests && local.matchingInterests.length > 0 && (
                       <div className="mb-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <Heart className="h-4 w-4 text-red-500" />
+                          <Heart className="h-4 w-4 text-red-900" />
                           <span className="text-sm font-semibold text-foreground">Shared Interests:</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -698,7 +698,7 @@ export const MatchWithLocalPage: React.FC = () => {
                   {tourist.matchingInterests && tourist.matchingInterests.length > 0 && (
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <Heart className="h-4 w-4 text-red-500" />
+                        <Heart className="h-4 w-4 text-red-900" />
                         <span className="text-sm font-semibold text-foreground">Matching Interests:</span>
                       </div>
                       <div className="flex flex-wrap gap-2">
