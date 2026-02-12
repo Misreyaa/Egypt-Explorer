@@ -51,7 +51,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     },
     { 
       id: 'llm', 
-      label: 'Talk to me', 
+      label: 'Talk With Me', 
       icon: Bot, 
       description: 'Chat with our AI about Egyptian history and culture.',
       color: 'bg-blue-700' 
