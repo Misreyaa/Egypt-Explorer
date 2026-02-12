@@ -4,31 +4,52 @@ import { TourDetailsDialog } from './TourDetailsDialog';
 import { useUser } from '../context/UserContext';
 import { useDestinations } from '../hooks/useDestinations';
 
+// components/SkeletonGrid.tsx
+export function SkeletonGrid() {
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-64 rounded-lg bg-gray-200 animate-pulse"
+        />
+      ))}
+    </div>
+  );
+}
+
+
 export const RecommendationsPage: React.FC = () => {
   const { user } = useUser();
   const { destinations, loading } = useDestinations();
   const [selectedDestination, setSelectedDestination] = React.useState<Destination | null>(null);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const getRecommendations = (): Destination[] => {
-    if (!user || user.userType !== 'tourist') return destinations;
+const getRecommendations = (): Destination[] => {
+  if (!user || user.userType !== 'tourist') return destinations;
 
-    const profile = user.profile;
-    return destinations
-      .filter(dest => {
-        const categories = Array.isArray(dest.category) ? dest.category : [];
-        const matchesActivities = categories.some(cat => profile.activities.includes(cat));
-        const matchesTravelType = dest.travelType.includes(profile.travelType);
-        return matchesActivities || matchesTravelType;
-      })
-      .sort((a, b) => {
-        const aCategories = Array.isArray(a.category) ? a.category : [];
-        const bCategories = Array.isArray(b.category) ? b.category : [];
-        const aScore = aCategories.filter(cat => profile.activities.includes(cat)).length;
-        const bScore = bCategories.filter(cat => profile.activities.includes(cat)).length;
-        return bScore - aScore;
-      });
-  };
+  const { activities, travelType } = user.profile;
+
+  return destinations
+    .map(dest => {
+      const categories = Array.isArray(dest.category) ? dest.category : [];
+
+      const matchedCategories = categories.filter(cat =>
+        activities.includes(cat)
+      );
+
+      const travelTypeMatch = dest.travelType.includes(travelType);
+
+      return {
+        dest,
+        score: matchedCategories.length + (travelTypeMatch ? 0.5 : 0),
+      };
+    })
+    .filter(item => item.score > 0) // at least ONE match
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.dest);
+};
+
 
   const recommendations = getRecommendations();
 
@@ -42,8 +63,10 @@ export const RecommendationsPage: React.FC = () => {
 
   // Get activities for display
   const userActivities = user?.userType === 'tourist' ? user.profile.activities : [];
+  if (loading) return <SkeletonGrid />;
 
   return (
+    
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-6 sm:py-8 md:py-12 px-4">
         {loading && (

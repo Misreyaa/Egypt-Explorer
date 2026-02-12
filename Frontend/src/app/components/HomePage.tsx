@@ -64,13 +64,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       color: 'bg-orange-700' 
     },
     { 
-      id: 'help', 
-      label: 'Help Me', 
-      icon: HelpCircle, 
-      description: 'Find guides, tips, and emergency contacts.',
-      color: 'bg-pine-dark' 
-    },
-    { 
       id: 'wishlist', 
       label: 'Wishlist', 
       icon: Sparkles, 
@@ -105,6 +98,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       description: 'Stay updated on new posts, matches, and community interactions.',
       color: 'bg-purple-600' 
     },
+        { 
+      id: 'help', 
+      label: 'Help Me', 
+      icon: HelpCircle, 
+      description: 'Find guides, tips, and emergency contacts.',
+      color: 'bg-pine-dark' 
+    }
   ];
 
   return (

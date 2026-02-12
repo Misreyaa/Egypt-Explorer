@@ -129,8 +129,6 @@ async def match_destinations(email: str, current_user: str = Depends(get_current
 # ----------------- Match Locals -----------------
 @router.get("/{email}/match_locals")
 async def match_locals(email: str, current_user: str = Depends(get_current_user)):
-    if current_user != email:
-        raise HTTPException(status_code=403, detail="Not allowed")
     tourist = await tourists_collection.find_one({"email": email})
     if not tourist:
         raise HTTPException(status_code=404, detail="Tourist not found")
