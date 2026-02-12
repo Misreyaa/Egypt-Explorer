@@ -33,7 +33,7 @@ export const BiasedSplashScreen: React.FC<BiasedSplashScreenProps> = ({ isVisibl
           >
             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
               <div className="bg-red-900/10 p-3 rounded-full">
-                <AlertTriangle className="h-8 w-8 text-red-700" />
+                <AlertTriangle className="h-8 w-8 text-red-500" />
               </div>
 
               <div className="space-y-3">

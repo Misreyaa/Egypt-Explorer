@@ -112,7 +112,7 @@ export const HelpPage: React.FC = () => {
         <div className="space-y-6">
           <Card className="bg-gradient-to-br from-red-50 to-orange-50 border-red-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-700">
+              <CardTitle className="flex items-center gap-2 text-red-500">
                 <AlertCircle className="h-5 w-5" />
                 Emergency Contacts
               </CardTitle>
@@ -124,10 +124,10 @@ export const HelpPage: React.FC = () => {
                 return (
                   <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
                     <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-red-600" />
+                      <Icon className="h-4 w-4 text-red-500" />
                       <span className="text-sm font-medium">{contact.service}</span>
                     </div>
-                    <span className="text-sm font-bold text-red-700">{contact.number}</span>
+                    <span className="text-sm font-bold text-red-500">{contact.number}</span>
                   </div>
                 );
               })}

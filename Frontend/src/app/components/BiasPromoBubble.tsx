@@ -6,15 +6,16 @@ import { motion, AnimatePresence } from 'motion/react';
 interface BiasPromoBubbleProps {
   onNavigate: (page: string) => void;
   currentPage: string;
+  userType: 'tourist' | 'local';
 }
 
-export const BiasPromoBubble: React.FC<BiasPromoBubbleProps> = ({ onNavigate, currentPage }) => {
+export const BiasPromoBubble: React.FC<BiasPromoBubbleProps> = ({ onNavigate, currentPage, userType }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
-  // Show bubble after a delay, but not if on bias page or already dismissed
+  // Show bubble after a delay, but only for tourists, not on bias page, and not if dismissed
   useEffect(() => {
-    if (currentPage === 'bias' || isDismissed) {
+    if (userType !== 'tourist' || currentPage === 'bias' || isDismissed) {
       setIsVisible(false);
       return;
     }
@@ -24,7 +25,7 @@ export const BiasPromoBubble: React.FC<BiasPromoBubbleProps> = ({ onNavigate, cu
     }, 3000); // Show after 3 seconds
 
     return () => clearTimeout(timer);
-  }, [currentPage, isDismissed]);
+  }, [currentPage, isDismissed, userType]);
 
   const handleDismiss = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -61,7 +62,7 @@ export const BiasPromoBubble: React.FC<BiasPromoBubbleProps> = ({ onNavigate, cu
                 <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400 animate-pulse" />
               </div>
               <div className="space-y-1">
-                <h3 className="font-bold text-lg leading-tight text-primary">Sans lies, sans bias</h3>
+                <h3 className="font-bold text-lg leading-tight text-primary">Sans myths, sans bias</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Challenge your perceptions. Try our Bias Detector now!
                 </p>
