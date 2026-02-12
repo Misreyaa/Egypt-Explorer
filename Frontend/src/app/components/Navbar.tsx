@@ -40,12 +40,13 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
     { id: 'bias', label: 'Bias Detector', icon: ShieldAlert },
     { id: 'llm', label: 'Talk With Me', icon: Bot },
     { id: 'egyreal', label: 'Explore #EGYREAL', icon: Hash },
-    { id: 'help', label: 'Help Me', icon: HelpCircle },
     { id: 'wishlist', label: 'Wishlist', icon: Sparkles },
     { id: 'comfort-zone', label: 'Go out of your comfort zone', icon: Compass },
     { id: 'match-local', label: 'Match with a Local', icon: Users },
     { id: 'local-blog', label: 'The Local Blog', icon: MessageSquare },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'help', label: 'Help Me', icon: HelpCircle },
+
   ];
 
   const localNavItems = [

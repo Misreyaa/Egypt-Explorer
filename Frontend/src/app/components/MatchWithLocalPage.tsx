@@ -71,7 +71,7 @@ export const MatchWithLocalPage: React.FC = () => {
   // --- Data Fetching ---
   useEffect(() => {
     const fetchData = async () => {
-      const userEmail = (user as any)?.email || (user as any)?.profile?.email;
+      const userEmail= localStorage.getItem('currentUser');
 
       if (!user || !userEmail) {
         console.warn("User or email missing, skipping fetch");
@@ -83,10 +83,18 @@ export const MatchWithLocalPage: React.FC = () => {
 
       try {
         const endpoint = isLocal 
-          ? `http://localhost:8000/${userEmail}/match_tourists`
-          : `http://localhost:8000/${userEmail}/match_locals`;
+          ? `http://127.0.0.1:8080/locals/${userEmail}/match_tourists`
+          :  `http://127.0.0.1:8080/tourists/${userEmail}/match_locals`;
+;
 
-        const response = await fetch(endpoint);
+        const token = localStorage.getItem("authToken");
+
+const response = await fetch(endpoint, {
+  headers: {
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json"
+  }
+});
 
         if (!response.ok) {
           throw new Error('Failed to fetch matches');
