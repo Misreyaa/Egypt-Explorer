@@ -1,22 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // Added useRef, useEffect
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { MessageSquare, Send, Bot, User, History, Plus } from 'lucide-react';
+import { MessageSquare, Send, Bot, User } from 'lucide-react';
 
-// STICKING TO ORIGINAL DATATYPES
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  timestamp: Date; // Kept as Date per your original file
-}
-
-interface ChatSession {
-  id: string;
-  title: string;
-  messages: Message[];
+  timestamp: Date;
 }
 
 const sampleResponses = [
@@ -28,45 +21,24 @@ const sampleResponses = [
 ];
 
 export const LLMPage: React.FC = () => {
-  const [sessions, setSessions] = useState<ChatSession[]>([
+  const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
-      title: 'Egyptian Cuisine Chat',
-      messages: [
-        {
-          role: 'assistant',
-          content: "Hello! I'm your Egyptian culture assistant. Ask me anything about Egypt - from travel tips to historical facts, cultural customs, or recommendations for your trip!",
-          timestamp: new Date(),
-        },
-      ]
-    }
+      role: 'assistant',
+      content: "Hello! I'm your Egyptian culture assistant. Ask me anything about Egypt - from travel tips to historical facts, cultural customs, or recommendations for your trip!",
+      timestamp: new Date(),
+    },
   ]);
-  const [activeSessionId, setActiveSessionId] = useState('1');
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // FIX: Scroll Ref to manage the viewport
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
-
-  // Auto-scroll logic
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeSession.messages, isTyping]);
-
-  const handleNewChat = () => {
-    const newId = Date.now().toString();
-    const newSession: ChatSession = {
-      id: newId,
-      title: `New Chat ${sessions.length + 1}`,
-      messages: [{ 
-        role: 'assistant', 
-        content: "How can I help you with Egyptian culture today?", 
-        timestamp: new Date() 
-      }]
-    };
-    setSessions([newSession, ...sessions]);
-    setActiveSessionId(newId);
-  };
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isTyping]);
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -74,13 +46,10 @@ export const LLMPage: React.FC = () => {
     const userMessage: Message = {
       role: 'user',
       content: input,
-      timestamp: new Date(), // Maintaining Date object
+      timestamp: new Date(),
     };
 
-    setSessions(prev => prev.map(s => 
-      s.id === activeSessionId ? { ...s, messages: [...s.messages, userMessage] } : s
-    ));
-    
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
 
@@ -91,92 +60,74 @@ export const LLMPage: React.FC = () => {
         content: randomResponse,
         timestamp: new Date(),
       };
-
-      setSessions(prev => prev.map(s => 
-        s.id === activeSessionId ? { ...s, messages: [...s.messages, assistantMessage] } : s
-      ));
+      setMessages((prev) => [...prev, assistantMessage]);
       setIsTyping(false);
     }, 1500);
   };
 
+  // FIX: Explicitly typing the event for the new onKeyDown handler
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar for History */}
-      <aside className="w-72 border-r bg-muted/20 flex flex-col shrink-0">
-        <div className="p-4 border-b bg-background/50">
-          <Button onClick={handleNewChat} className="w-full gap-2 shadow-sm" variant="outline">
-            <Plus className="h-4 w-4" /> New Chat
-          </Button>
+    <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-12 w-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+            <MessageSquare className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Talk to an LLM</h1>
+            <p className="text-muted-foreground">Get instant answers about Egyptian culture, travel tips, and more</p>
+          </div>
         </div>
-        <ScrollArea className="flex-1">
-          <div className="p-3 space-y-1">
-            <div className="px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <History className="h-3 w-3" /> Chat History
-            </div>
-            {sessions.map((session) => (
-              <button
-                key={session.id}
-                onClick={() => setActiveSessionId(session.id)}
-                className={`w-full text-left px-3 py-3 rounded-xl text-sm transition-all truncate ${
-                  activeSessionId === session.id 
-                    ? 'bg-primary text-primary-foreground shadow-md' 
-                    : 'hover:bg-muted font-medium text-muted-foreground'
-                }`}
-              >
-                {session.title}
-              </button>
-            ))}
-          </div>
-        </ScrollArea>
-      </aside>
+      </div>
 
-      {/* Main Container */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50/30">
-        <header className="h-16 border-b flex items-center px-8 bg-background/80 backdrop-blur-md sticky top-0 z-10">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-200">
-              <Bot className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h2 className="font-bold text-slate-800 leading-none">Egypt Explorer AI</h2>
-              <span className="text-[10px] text-emerald-600 font-medium uppercase tracking-tighter">Online</span>
-            </div>
-          </div>
-        </header>
-
-        {/* Scrollable Area - Fixed width container to prevent bad shape */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-            {activeSession.messages.map((message, index) => (
+      <Card className="h-[600px] flex flex-col">
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5" />
+            Egypt Culture Assistant
+          </CardTitle>
+          <CardDescription>
+            Note: This is a simulated assistant.
+          </CardDescription>
+        </CardHeader>
+        
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-4">
+            {messages.map((message, index) => (
               <div
                 key={index}
-                className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {message.role === 'assistant' && (
-                  <Avatar className="h-10 w-10 border shadow-sm shrink-0">
-                    <AvatarFallback className="bg-emerald-50 text-emerald-600">
-                      <Bot className="h-5 w-5" />
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600">
+                      <Bot className="h-4 w-4 text-white" />
                     </AvatarFallback>
                   </Avatar>
                 )}
                 <div
-                  className={`max-w-[75%] rounded-2xl px-5 py-3.5 shadow-sm transition-all ${
+                  className={`max-w-[80%] rounded-lg p-3 ${
                     message.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-tr-none'
-                      : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
                   }`}
                 >
-                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
-                    {message.content}
-                  </p>
-                  <span className={`text-[10px] mt-2 block font-medium ${message.role === 'user' ? 'opacity-60' : 'text-slate-400'}`}>
+                  <p className="text-sm">{message.content}</p>
+                  <p className="text-[10px] opacity-70 mt-1">
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                  </p>
                 </div>
                 {message.role === 'user' && (
-                  <Avatar className="h-10 w-10 border shadow-sm shrink-0">
-                    <AvatarFallback className="bg-slate-100 text-slate-600">
-                      <User className="h-5 w-5" />
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
                 )}
@@ -184,56 +135,43 @@ export const LLMPage: React.FC = () => {
             ))}
             
             {isTyping && (
-              <div className="flex gap-4">
-                <Avatar className="h-10 w-10 border shadow-sm shrink-0">
-                  <AvatarFallback className="bg-emerald-50 text-emerald-600">
-                    <Bot className="h-5 w-5" />
+              <div className="flex gap-3">
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600">
+                    <Bot className="h-4 w-4 text-white" />
                   </AvatarFallback>
                 </Avatar>
-                <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-none px-5 py-4">
-                  <div className="flex gap-1.5 items-center">
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-duration:0.8s]" />
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]" />
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]" />
+                <div className="bg-muted rounded-lg p-3">
+                  <div className="flex gap-1">
+                    {/* FIX: Improved Tailwind animation delays */}
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
                   </div>
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
+            {/* FIX: Anchor for scrollIntoView */}
+            <div ref={scrollRef} />
           </div>
-        </div>
+        </ScrollArea>
 
-        {/* Input area remains fixed at bottom */}
-        <footer className="p-6 bg-background border-t">
-          <div className="max-w-4xl mx-auto">
-            <div className="relative flex items-center">
-              <Input
-                placeholder="Message Egypt Explorer..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                className="pr-14 py-7 rounded-2xl border-slate-200 focus-visible:ring-emerald-500 bg-slate-50/50 shadow-inner text-base"
-                disabled={isTyping}
-              />
-              <Button 
-                onClick={handleSend} 
-                disabled={!input.trim() || isTyping}
-                className="absolute right-2 h-11 w-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 transition-colors p-0"
-              >
-                <Send className="h-5 w-5" />
-              </Button>
-            </div>
-            <p className="text-[11px] text-center text-slate-400 mt-3 font-medium">
-              Powered by your Egyptian Culture Guide • History is saved to your session
-            </p>
+        <CardContent className="border-t p-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Ask about Egypt, culture, travel tips..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown} // FIX: Updated event
+              disabled={isTyping}
+            />
+            <Button onClick={handleSend} disabled={!input.trim() || isTyping}>
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
-        </footer>
-      </main>
+        </CardContent>
+      </Card>
+      {/* ... Footer grid ... */}
     </div>
   );
 };
