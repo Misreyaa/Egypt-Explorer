@@ -5,19 +5,34 @@ from groq import Groq
 from app.config import get_settings
 
 
-def build_context(results: Iterable[Any]) -> str:
+def build_context(results: Iterable[Any], max_places: int = 5) -> str:
     """
-    Build a human-readable context string from Qdrant search results.
+    Build context using top unique places only.
     """
+
     context = []
+    seen_places = set()
 
     for r in results:
         payload = r.payload
+
+        place_id = payload.get("place_id")
+        if place_id in seen_places:
+            continue
+
+        seen_places.add(place_id)
+
         field_type = str(payload.get("field_type", "")).upper()
         name = payload.get("name", "")
         text = payload.get("text", "")
+
         context.append(f"[{field_type}] {name}: {text}")
 
+        if len(seen_places) >= max_places:
+            break
+
+    print(f"Built context from {len(context)} unique places")
+    #print("\n".join(context))   
     return "\n".join(context)
 
 
@@ -25,26 +40,50 @@ def generate(query: str, context: str) -> str:
     """
     Generate response using LLM via Groq (e.g. Llama 3.3).
     """
-    settings = get_settings()
+    print("Getting settings for Groq client...")
+    #settings = get_settings()
+    print("settings")
+    
+    print("Initializing Groq client...")
+    client = Groq(api_key="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")
+    print("Groq client initialized.")
+    prompt = f"""
+        You are an assistant for an Egypt tourism system.
 
-    if not settings.groq_api_key:
-        raise ValueError("GROQ_API_KEY must be set in environment variables")
+        You will receive context containing EXACTLY 5 places retrieved from a RAG system.
 
-    client = Groq(api_key=settings.groq_api_key)
+        STRICT RULES:
+        - You MUST consider all 5 places.
+        - You MUST NOT use any external knowledge.
+        - If information is missing in the context, say "Not available in provided data."
+        - Do NOT invent facts.
+        - If the question is about a specific field (opening hours, safety, tips, duration, best time), extract ONLY that field from each place.
+        - If the question is about recommendations (e.g. "where should I go"), compare the 5 places and explain briefly why each is relevant.
 
-    prompt = f"""You are a helpful assistant that answers questions about Egyptian places and locations.
+        Context:
+        {context}
 
-Context:
-{context}
+        User Question:
+        {query}
 
-Question: {query}
+        Return your answer in this format:
 
-Please provide a concise, helpful answer based only on the context above. If the context doesn't contain enough information, say that you don't know.
+        For recommendation queries:
+        1. Place Name – Short reason why it matches the query.
+        2. Place Name – Short reason.
+        3. Place Name – Short reason.
+        4. Place Name – Short reason.
+        5. Place Name – Short reason.
 
-Answer:"""
+        For factual queries:
+        Place Name:
+        - Requested information only.
 
+        Answer:
+        """
+    # print(f"Groq prompt:\n\n\n\n{prompt}")
     response = client.chat.completions.create(
-        model=settings.groq_model,
+        model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
@@ -52,10 +91,10 @@ Answer:"""
             },
             {"role": "user", "content": prompt},
         ],
-        temperature=0.7,
+        temperature=0.3,
         max_tokens=1000,
     )
-
+    print(f"Groq response: {response.choices[0].message.content.strip()}")
     return response.choices[0].message.content.strip()
 
 
@@ -74,7 +113,8 @@ def build_rule_based_answer(query: str, results: Iterable[Any]) -> str:
 
     q_lower = query.lower()
 
-    # Group results by place_id
+    # Since results are already reranked, use the first result's place
+    # Group results by place_id to collect all fields for that place
     by_place: dict[str, list[Any]] = {}
     for r in results:
         payload = getattr(r, "payload", {}) or {}
@@ -87,38 +127,14 @@ def build_rule_based_answer(query: str, results: Iterable[Any]) -> str:
         # No place_ids in payloads; just dump context
         return f"ANSWER BASED ON:\n{build_context(results)}"
 
-    def best_score(rs: list[Any]) -> float:
-        return max((getattr(r, "score", 0.0) or 0.0) for r in rs)
-
-    # Try to find a place whose name overlaps most strongly with the query tokens.
-    # This strongly prefers specific matches like "Abdeen Palace" over generic
-    # matches like "The Manial Palace Museum" when the user says "Abdeen Palace".
-    q_tokens = {t for t in q_lower.replace(",", " ").split() if t}
-    name_matched_place_id: str | None = None
-    best_name_score = -1.0
-
-    for place_id, rs in by_place.items():
-        payload = rs[0].payload
-        name = str(payload.get("name") or "").lower()
-        if not name:
-            continue
-
-        name_tokens = {t for t in name.replace(",", " ").split() if t}
-        overlap = q_tokens & name_tokens
-        if not overlap:
-            continue
-
-        # Score = number of overlapping tokens (strong signal) + similarity score.
-        score = len(overlap) * 10.0 + best_score(rs)
-        if score > best_name_score:
-            best_name_score = score
-            name_matched_place_id = place_id
-
-    # If we found a good name match, focus answers on it; otherwise pick best overall.
-    if name_matched_place_id is not None:
-        top_place_id = name_matched_place_id
-    else:
-        top_place_id = max(by_place.items(), key=lambda kv: best_score(kv[1]))[0]
+    # Use the first place from reranked results (already sorted by relevance)
+    first_result = results[0]
+    first_payload = getattr(first_result, "payload", {}) or {}
+    top_place_id = str(first_payload.get("place_id") or "")
+    
+    if not top_place_id:
+        # Fallback to context if no place_id
+        return f"ANSWER BASED ON:\n{build_context(results)}"
 
     top_results = by_place[top_place_id]
     top_payload = top_results[0].payload

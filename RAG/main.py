@@ -414,7 +414,7 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
     chunk_type = "activity" if _looks_like_activity_intent(req.query) else "description"
 
     # Retrieve a wider candidate set, then rerank down to the requested limit.
-    initial_k = max(req.limit, 20)
+    initial_k = max(req.limit, 10)
     results = retrieve(
         req.query,
         top_k=initial_k,
@@ -424,8 +424,23 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
         chunk_type=chunk_type,
     )
 
+    # Print all RAG retrieval results before reranking
+    print(f"\n=== RAG RETRIEVAL RESULTS ({len(results)} items) ===")
+    for i, r in enumerate(results, 1):
+        payload = getattr(r, "payload", {}) or {}
+        print(f"[{i}] Score: {getattr(r, 'score', 'N/A'):.4f} | {payload.get('field_type', 'N/A').upper()}: {payload.get('name', 'N/A')}")
+    print()
+
     # Cross-encoder reranking (only for semantic search paths).
-    results = rerank(req.query, results, top_k=req.limit)
+    # Rerank without clipping to reorder all results
+    results = rerank(req.query, results, top_k=None)
+
+    # Print all reranked results
+    print(f"\n=== RERANKED RESULTS ({len(results)} items) ===")
+    for i, r in enumerate(results, 1):
+        payload = getattr(r, "payload", {}) or {}
+        print(f"[{i}] Score: {getattr(r, 'score', 'N/A'):.4f} | {payload.get('field_type', 'N/A').upper()}: {payload.get('name', 'N/A')}")
+    print()
 
     # Guardrail: if filters eliminate everything, be honest instead of fabricating
     if not results:
@@ -494,13 +509,15 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
     # answer that tries to be precise about specific fields like entry fees
     # or visiting hours instead of dumping raw context.
     try:
+        print("Generating answer with Groq...")
         answer = generate(req.query, context)
     except ValueError:
         answer = build_rule_based_answer(req.query, results)
 
-    # Build source list and lightweight place summaries
+    # Build source list and lightweight place summaries in reranked order
     sources = []
     place_map: dict[str, PlaceSummary] = {}
+    places_ordered: list[PlaceSummary] = []  # Maintain reranked order
 
     for r in results:
         payload = r.payload
@@ -515,13 +532,16 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
             }
         )
 
+        # Add place to ordered list if not already added (maintaining reranked order)
         if place_id not in place_map:
-            place_map[place_id] = PlaceSummary(
+            place_summary = PlaceSummary(
                 place_id=place_id,
                 name=payload.get("name"),
                 category=payload.get("category"),
                 city=payload.get("city"),
             )
+            place_map[place_id] = place_summary
+            places_ordered.append(place_summary)
 
     # Confidence = best similarity score from Qdrant (if available)
     confidence = max((getattr(r, "score", None) or 0.0) for r in results) if results else None
@@ -535,7 +555,7 @@ async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_u
             "category": req.category,
             "wheelchair_only": req.wheelchair_only,
         },
-        places=list(place_map.values()),
+        places=places_ordered,
     )
 
 

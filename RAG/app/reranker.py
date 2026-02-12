@@ -8,13 +8,14 @@ from sentence_transformers import CrossEncoder
 reranker = CrossEncoder("BAAI/bge-reranker-base")
 
 
-def rerank(query: str, results: List, top_k: int = 5):
+def rerank(query: str, results: List, top_k=None):
     """
     Rerank Qdrant results using a cross-encoder.
 
     - `results` is the list returned by `app.retrieval.retrieve`
       (typically qdrant_client.models.ScoredPoint instances).
     - We read the textual content from `payload["text"]` or `payload["rag_text"]`.
+    - If `top_k` is provided, only returns top_k reranked results. Otherwise returns all results.
     """
     if not results:
         return []
