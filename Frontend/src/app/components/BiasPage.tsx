@@ -44,7 +44,7 @@ const metrics = [
   { level: 2, label: 'Opinionated', range: '21–40%', color: 'bg-sky-500', text: 'text-sky-600' },
   { level: 3, label: 'Leaning', range: '41–60%', color: 'bg-amber-500', text: 'text-amber-600' },
   { level: 4, label: 'Biased', range: '61–80%', color: 'bg-orange-500', text: 'text-orange-600' },
-  { level: 5, label: 'Highly Biased', range: '81–100%', color: 'bg-red-600', text: 'text-red-600' },
+  { level: 5, label: 'Highly Biased', range: '81–100%', color: 'bg-red-500', text: 'text-red-500' },
 ];
 
 const mockOutputs: AnalysisResponse[] = [

@@ -1,22 +1,21 @@
 import React from 'react';
-import { TravelCard } from './TravelCard';
+import { TravelCard, Destination } from './TravelCard';
 import { TourDetailsDialog } from './TourDetailsDialog';
 import { useUser } from '../context/UserContext';
 import { Compass } from 'lucide-react';
-import { useDestinations } from '../hooks/useDestinations';
+import { allDestinations } from '../data/destinations';
 
 export const ComfortZonePage: React.FC = () => {
   const { user } = useUser();
-  const { destinations, loading } = useDestinations();
-  const [selectedDestination, setSelectedDestination] = React.useState<any | null>(null);
+  const [selectedDestination, setSelectedDestination] = React.useState<Destination | null>(null);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const getInverseRecommendations = (): any[] => {
+  const getInverseRecommendations = (): Destination[] => {
     if (!user || user.userType !== 'tourist') return [];
 
     const profile = user.profile;
     // Filter destinations that do NOT match the user's selected activities
-    return destinations
+    return allDestinations
       .filter(dest => {
         const categories = Array.isArray(dest.category) ? dest.category : [];
         const matchesActivities = categories.some(cat => profile.activities.includes(cat));
@@ -28,7 +27,7 @@ export const ComfortZonePage: React.FC = () => {
   const userActivities = user?.userType === 'tourist' ? user.profile.activities : [];
 
   const handleViewDetails = (id: string) => {
-    const destination = destinations.find(d => d.id === id);
+    const destination = allDestinations.find(d => d.id === id);
     if (destination) {
       setSelectedDestination(destination);
       setIsDialogOpen(true);
@@ -44,7 +43,7 @@ export const ComfortZonePage: React.FC = () => {
               <Compass className="h-10 w-10 text-pine-primary" />
             </div>
           </div>
-          <h1 className="mb-2 sm:mb-3 text-brown-dark text-2xl sm:text-3xl md:text-4xl font-bold">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Step Out of Your Comfort Zone
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto">
@@ -52,12 +51,6 @@ export const ComfortZonePage: React.FC = () => {
             Here are some experiences completely different from your usual style. Try something new!
           </p>
         </div>
-
-        {loading && (
-          <div className="mb-4 text-center text-muted-foreground text-sm">
-            Loading destinations from Egypt Explorer...
-          </div>
-        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {recommendations.map((destination) => (

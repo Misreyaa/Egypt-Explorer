@@ -201,7 +201,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ onStartLesson }) => {
               <GraduationCap className="h-6 w-6 text-papyrus-light" />
             </div>
             <div>
-              <h1 className="text-brown-dark font-bold text-2xl sm:text-3xl">The Lessons in Egyptians</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">The Lessons in Egyptians</h1>
               <p className="text-muted-foreground text-sm sm:text-base">Learn language, customs, and history to enrich your journey</p>
             </div>
           </div>

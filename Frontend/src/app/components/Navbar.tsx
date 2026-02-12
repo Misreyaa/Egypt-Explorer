@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
     { id: 'recommendations', label: 'Walk the Streets of Egypt', icon: Navigation },
     { id: 'lessons', label: 'The Lessons in Egyptians', icon: GraduationCap },
     { id: 'bias', label: 'Bias Detector', icon: ShieldAlert },
-    { id: 'llm', label: 'Talk to me', icon: Bot },
+    { id: 'llm', label: 'Talk With Me', icon: Bot },
     { id: 'egyreal', label: 'Explore #EGYREAL', icon: Hash },
     { id: 'help', label: 'Help Me', icon: HelpCircle },
     { id: 'wishlist', label: 'Wishlist', icon: Sparkles },

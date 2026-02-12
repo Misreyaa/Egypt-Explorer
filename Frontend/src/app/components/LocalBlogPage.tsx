@@ -306,7 +306,7 @@ export const LocalBlogPage: React.FC = () => {
                     onClick={() => handleLikePost(post.id)}
                     className={`gap-2 ${
                       post.likes.includes(currentUserEmail) 
-                        ? 'text-red-500 hover:text-red-600' 
+                        ? 'text-red-500 hover:text-red-500' 
                         : 'text-muted-foreground'
                     }`}
                   >

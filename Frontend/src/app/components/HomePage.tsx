@@ -51,7 +51,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     },
     { 
       id: 'llm', 
-      label: 'Talk to me', 
+      label: 'Talk With Me', 
       icon: Bot, 
       description: 'Chat with our AI about Egyptian history and culture.',
       color: 'bg-blue-700' 
@@ -136,7 +136,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           </h1>
           <p className="text-muted-foreground text-lg leading-relaxed mb-6">
             Explore personalized recommendations, cultural lessons, and local connections. 
-            But to truly understand Egypt, we invite you to see it <span className="font-bold text-primary italic">"sans lies, sans bias"</span>.
+            But to truly understand Egypt, we invite you to see it <span className="font-bold text-primary italic">"sans myths, sans bias"</span>.
           </p>
           
           <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200 dark:border-red-900/50 p-4 rounded-xl inline-flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-1000">

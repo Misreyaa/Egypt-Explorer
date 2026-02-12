@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 
 interface BiasedSplashScreenProps {
   isVisible: boolean;
-  onDismiss?: () => void;
+  onDismiss?: (navigateToBias: boolean) => void; // Standardized prop definition
 }
 
 export const BiasedSplashScreen: React.FC<BiasedSplashScreenProps> = ({ isVisible, onDismiss }) => {
@@ -31,10 +31,9 @@ export const BiasedSplashScreen: React.FC<BiasedSplashScreenProps> = ({ isVisibl
               border: '1px solid #d4c5a5'
             }}
           >
-            {/* Papyrus ragged edge simulation (top and bottom) */}
             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
               <div className="bg-red-900/10 p-3 rounded-full">
-                <AlertTriangle className="h-8 w-8 text-red-700" />
+                <AlertTriangle className="h-8 w-8 text-red-500" />
               </div>
 
               <div className="space-y-3">
@@ -74,9 +73,3 @@ export const BiasedSplashScreen: React.FC<BiasedSplashScreenProps> = ({ isVisibl
     </AnimatePresence>
   );
 };
-
-// Update props definition
-interface BiasedSplashScreenProps {
-  isVisible: boolean;
-  onDismiss?: (navigateToBias: boolean) => void;
-}

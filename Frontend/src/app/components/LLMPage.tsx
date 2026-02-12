@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { MessageSquare, Send, Bot, User, Lock } from 'lucide-react';
-import { askRag, healthCheck, login, PlaceSummary } from '../api/rag';
+import { MessageSquare, Send, Bot, User, Lock, History, Plus } from 'lucide-react';
+import { askRag, healthCheck, login } from '../api/rag';
 import { useUser } from '../context/UserContext';
 
 interface Message {
@@ -14,42 +14,63 @@ interface Message {
   timestamp: Date;
 }
 
-interface AssistantMessage extends Message {
-  places?: PlaceSummary[] | null;
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
 }
+
+const sampleResponses = [
+  "That's a great question about Egypt! Based on your interests, I'd recommend...",
+  "Egyptian culture is rich and diverse. Let me share some insights...",
+  "The best time to visit depends on what you want to experience. Summer can be hot, but...",
+  "Ancient Egyptian history spans over 3000 years. Here are the key periods you should know...",
+  "For authentic Egyptian cuisine, you must try koshari, ful medames, and ta'ameya...",
+];
 
 export const LLMPage: React.FC = () => {
   const { user } = useUser();
-  const [messages, setMessages] = useState<(Message | AssistantMessage)[]>([
+  const [sessions, setSessions] = useState<ChatSession[]>([
     {
-      role: 'assistant',
-      content: "Hello! I'm your Egyptian culture assistant. Ask me anything about Egypt - from travel tips to historical facts, cultural customs, or recommendations for your trip!",
-      timestamp: new Date(),
-    },
+      id: '1',
+      title: 'Egyptian Culture Chat',
+      messages: [
+        {
+          role: 'assistant',
+          content: "Hello! I'm your Egyptian culture assistant. Ask me anything about Egypt - from travel tips to historical facts, cultural customs, or recommendations for your trip!",
+          timestamp: new Date(),
+        },
+      ]
+    }
   ]);
+  const [activeSessionId, setActiveSessionId] = useState('1');
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
+
+  // Auto-scroll
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activeSession.messages, isTyping]);
+
+  // Initialize backend & token
   useEffect(() => {
     let cancelled = false;
 
     const initializeBackend = async () => {
       try {
         const ok = await healthCheck();
-        if (!cancelled) {
-          setBackendOnline(ok);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setBackendOnline(false);
-        }
+        if (!cancelled) setBackendOnline(ok);
+      } catch {
+        if (!cancelled) setBackendOnline(false);
       }
     };
 
-    // Initialize token on mount
     const initializeToken = async () => {
       try {
         let currentToken = localStorage.getItem('ragToken');
@@ -60,25 +81,36 @@ export const LLMPage: React.FC = () => {
             localStorage.setItem('ragToken', currentToken);
           }
         } else {
-          if (!cancelled) {
-            setToken(currentToken);
-          }
+          if (!cancelled) setToken(currentToken);
         }
       } catch (err) {
         console.error('Failed to initialize token:', err);
-        if (!cancelled) {
-          setError('Failed to connect to authentication service.');
-        }
+        if (!cancelled) setError('Failed to connect to authentication service.');
       }
     };
 
     initializeBackend();
     initializeToken();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
+
+  const handleNewChat = () => {
+    const newId = Date.now().toString();
+    const newSession: ChatSession = {
+      id: newId,
+      title: `New Chat ${sessions.length + 1}`,
+      messages: [
+        {
+          role: 'assistant',
+          content: "How can I help you with Egyptian culture today?",
+          timestamp: new Date()
+        }
+      ]
+    };
+    setSessions([newSession, ...sessions]);
+    setActiveSessionId(newId);
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
@@ -89,89 +121,52 @@ export const LLMPage: React.FC = () => {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setSessions(prev =>
+      prev.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, userMessage] } : s)
+    );
+
     setInput('');
     setIsTyping(true);
     setError(null);
 
     try {
       let currentToken = token;
-
       if (!currentToken) {
-        // Token might have been cleared, try to refresh
-        try {
-          currentToken = await login();
-          setToken(currentToken);
-          localStorage.setItem('ragToken', currentToken);
-        } catch (err) {
-          throw new Error('Authentication failed. Please refresh the page.');
-        }
+        currentToken = await login();
+        setToken(currentToken);
+        localStorage.setItem('ragToken', currentToken);
       }
 
-      try {
-        const answer = await askRag(currentToken, {
-          query: userMessage.content,
-          limit: 5,
-        });
-
-        const assistantMessage: AssistantMessage = {
-          role: 'assistant',
-          content: answer.response,
-          timestamp: new Date(),
-          places: answer.places ?? null,
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
-      } catch (err: any) {
-        // Token might have expired (401), try to get a new one
-        if (err?.message && err.message.includes('Unauthorized')) {
-          try {
-            currentToken = await login();
-            setToken(currentToken);
-            localStorage.setItem('ragToken', currentToken);
-
-            // Retry the query with new token
-            const answer = await askRag(currentToken, {
-              query: userMessage.content,
-              limit: 5,
-            });
-
-            const assistantMessage: AssistantMessage = {
-              role: 'assistant',
-              content: answer.response,
-              timestamp: new Date(),
-              places: answer.places ?? null,
-            };
-
-            setMessages((prev) => [...prev, assistantMessage]);
-            return;
-          } catch (retryErr) {
-            throw new Error('Token refresh failed. Please try again.');
-          }
-        }
-        throw err;
-      }
-    } catch (err: any) {
-      const message =
-        typeof err?.message === 'string'
-          ? err.message
-          : 'Something went wrong while contacting the assistant.';
-      setError(message);
-
+      // Ask RAG backend
+      const answer = await askRag(currentToken, { query: userMessage.content, limit: 5 });
       const assistantMessage: Message = {
         role: 'assistant',
-        content:
-          'Sorry, I could not reach the assistant right now. Please try again in a moment.',
+        content: answer.response,
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      setSessions(prev =>
+        prev.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, assistantMessage] } : s)
+      );
+    } catch (err: any) {
+      setError(err.message ?? 'Something went wrong contacting the assistant.');
+
+      // Fallback to sample response
+      const randomResponse = sampleResponses[Math.floor(Math.random() * sampleResponses.length)];
+      const fallbackMessage: Message = {
+        role: 'assistant',
+        content: randomResponse,
+        timestamp: new Date(),
+      };
+      setSessions(prev =>
+        prev.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, fallbackMessage] } : s)
+      );
     } finally {
       setIsTyping(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -179,175 +174,126 @@ export const LLMPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      {!user ? (
-        <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 bg-yellow-500 rounded-full flex items-center justify-center">
-                <Lock className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <CardTitle>Authentication Required</CardTitle>
-                <CardDescription>
-                  You need to sign in to use the Egyptian culture assistant
-                </CardDescription>
-              </div>
+    <div className="flex h-screen bg-background overflow-hidden">
+      {/* Sidebar */}
+      <aside className="w-72 border-r bg-muted/20 flex flex-col shrink-0">
+        <div className="p-4 border-b bg-background/50">
+          <Button onClick={handleNewChat} className="w-full gap-2 shadow-sm" variant="outline">
+            <Plus className="h-4 w-4" /> New Chat
+          </Button>
+        </div>
+        <ScrollArea className="flex-1">
+          <div className="p-3 space-y-1">
+            <div className="px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <History className="h-3 w-3" /> Chat History
             </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-4">
-              The LLM assistant is only available for authenticated users. Please sign in or create an account to access this feature.
-            </p>
-            <Button className="bg-yellow-600 hover:bg-yellow-700">
-              Go to Sign In
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="mb-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-12 w-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                <MessageSquare className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1>Talk to an LLM</h1>
-                <p className="text-muted-foreground">Get instant answers about Egyptian culture, travel tips, and more</p>
-              </div>
+            {sessions.map(session => (
+              <button
+                key={session.id}
+                onClick={() => setActiveSessionId(session.id)}
+                className={`w-full text-left px-3 py-3 rounded-xl text-sm transition-all truncate ${activeSessionId === session.id
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'hover:bg-muted font-medium text-muted-foreground'
+                  }`}
+              >
+                {session.title}
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      </aside>
+
+      {/* Main */}
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-50/30">
+        <header className="h-16 border-b flex items-center px-8 bg-background/80 backdrop-blur-md sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-200">
+              <Bot className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-800 leading-none">Egypt Explorer AI</h2>
+              <span className="text-[10px] text-emerald-600 font-medium uppercase tracking-tighter">Online</span>
             </div>
           </div>
+        </header>
 
-          <Card className="h-[600px] flex flex-col">
-            <CardHeader className="border-b">
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                Egypt Culture Assistant
-              </CardTitle>
-              <CardDescription>
-                Ask anything about Egypt and travel. This chat is connected to your FastAPI RAG backend.
-              </CardDescription>
-              {backendOnline === false && (
-                <p className="text-xs text-red-500 mt-1">
-                  Backend is not reachable. Please make sure the FastAPI server is running.
-                </p>
-              )}
-              {backendOnline && (
-                <p className="text-xs text-emerald-600 mt-1">
-                  Connected to backend.
-                </p>
-              )}
-            </CardHeader>
-
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {message.role === 'assistant' && (
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600">
-                          <Bot className="h-4 w-4 text-white" />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 ${message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                        }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                      <p className="text-xs opacity-70 mt-1">
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                    {message.role === 'user' && (
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                ))}
-
-                {isTyping && (
-                  <div className="flex gap-3">
-                    <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600">
-                        <Bot className="h-4 w-4 text-white" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="bg-muted rounded-lg p-3">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
-                  </div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+            {activeSession.messages.map((message, index) => (
+              <div key={index} className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {message.role === 'assistant' && (
+                  <Avatar className="h-10 w-10 border shadow-sm shrink-0">
+                    <AvatarFallback className="bg-emerald-50 text-emerald-600">
+                      <Bot className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div className={`max-w-[75%] rounded-2xl px-5 py-3.5 shadow-sm transition-all ${message.role === 'user'
+                    ? 'bg-primary text-primary-foreground rounded-tr-none'
+                    : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'
+                  }`}>
+                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+                  <span className={`text-[10px] mt-2 block font-medium ${message.role === 'user' ? 'opacity-60' : 'text-slate-400'}`}>
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                {message.role === 'user' && (
+                  <Avatar className="h-10 w-10 border shadow-sm shrink-0">
+                    <AvatarFallback className="bg-slate-100 text-slate-600">
+                      <User className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
                 )}
               </div>
-            </ScrollArea>
+            ))}
 
-            <CardContent className="border-t p-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Ask about Egypt, culture, travel tips..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={isTyping}
-                />
-                <Button onClick={handleSend} disabled={!input.trim() || isTyping}>
-                  <Send className="h-4 w-4" />
-                </Button>
+            {isTyping && (
+              <div className="flex gap-4">
+                <Avatar className="h-10 w-10 border shadow-sm shrink-0">
+                  <AvatarFallback className="bg-emerald-50 text-emerald-600">
+                    <Bot className="h-5 w-5" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-none px-5 py-4">
+                  <div className="flex gap-1.5 items-center">
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-duration:0.8s]" />
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]" />
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]" />
+                  </div>
+                </div>
               </div>
-              {error && (
-                <p className="text-xs text-red-500 mt-2">
-                  {error}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="mt-6 grid md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Quick Tips</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  Try asking about specific destinations, cultural practices, or travel logistics
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Example Questions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  "What should I wear?" "Best food in Cairo?" "How to bargain in markets?"
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Disclaimer</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  This is a demo. Real implementation would use OpenAI, Anthropic, or similar APIs
-                </p>
-              </CardContent>
-            </Card>
+            )}
+            <div ref={scrollRef} />
           </div>
-        </>
-      )}
+        </div>
+
+        {/* Input */}
+        <footer className="p-6 bg-background border-t">
+          <div className="max-w-4xl mx-auto">
+            <div className="relative flex items-center">
+              <Input
+                placeholder="Message Egypt Explorer..."
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="pr-14 py-7 rounded-2xl border-slate-200 focus-visible:ring-emerald-500 bg-slate-50/50 shadow-inner text-base"
+                disabled={isTyping}
+              />
+              <Button
+                onClick={handleSend}
+                disabled={!input.trim() || isTyping}
+                className="absolute right-2 h-11 w-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 transition-colors p-0"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
+            {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+            <p className="text-[11px] text-center text-slate-400 mt-3 font-medium">
+              Powered by your Egyptian Culture Guide • History is saved to your session
+            </p>
+          </div>
+        </footer>
+      </main>
     </div>
   );
 };

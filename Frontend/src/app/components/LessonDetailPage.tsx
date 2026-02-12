@@ -330,7 +330,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({ lesson, onBa
                     percentage >= 66 ? 'bg-pine-primary/20' : percentage >= 33 ? 'bg-amber-500/20' : 'bg-red-500/20'
                   }`}>
                     <span className={`text-4xl font-bold ${
-                      percentage >= 66 ? 'text-pine-primary' : percentage >= 33 ? 'text-amber-600' : 'text-red-600'
+                      percentage >= 66 ? 'text-pine-primary' : percentage >= 33 ? 'text-amber-600' : 'text-red-500'
                     }`}>
                       {score}/{quizQuestions.length}
                     </span>
@@ -355,7 +355,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({ lesson, onBa
                         {selectedAnswers[index] === q.correctAnswer ? (
                           <CheckCircle2 className="h-5 w-5 text-pine-primary shrink-0 mt-0.5" />
                         ) : (
-                          <X className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                          <X className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
                         )}
                         <div className="flex-1">
                           <p className="font-medium text-foreground text-sm mb-1">{q.question}</p>

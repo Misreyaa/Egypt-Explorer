@@ -121,7 +121,7 @@ function AppContent() {
           {renderPage()}
         </Suspense>
       </main>
-      <BiasPromoBubble currentPage={currentPage} onNavigate={handlePageChange} />
+      <BiasPromoBubble currentPage={currentPage} onNavigate={handlePageChange} userType={user.userType} />
       <Toaster position="top-center" expand={false} richColors />
       {showLocalRules && <LocalRulesPopup open={showLocalRules} onClose={() => setShowLocalRules(false)} />}
     </div>
