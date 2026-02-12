@@ -11,7 +11,6 @@ type ApiDestination = {
   historical_context?: string;
   image_path?: string;
   tags?: string[] | string | null;
-  // Some older documents might still have a single "category" field
   category?: string[] | string | null;
   average_visit_duration?: string;
 };
@@ -29,13 +28,10 @@ function mapApiToDestination(d: ApiDestination): Destination {
     : 'https://images.unsplash.com/photo-1580745372256-9cbe3ebb4f8d?q=80&w=1200&auto=format&fit=crop';
 
   const rawTags = d.tags ?? d.category ?? [];
-  const tagsArray: string[] = Array.isArray(rawTags)
+  const category = Array.isArray(rawTags)
     ? rawTags.map(String)
-    : rawTags
-    ? String(rawTags)
-        .split(',')
-        .map(part => part.trim())
-        .filter(Boolean)
+    : typeof rawTags === 'string'
+    ? rawTags.split(',').map(t => t.trim()).filter(Boolean)
     : [];
 
   return {
@@ -43,8 +39,7 @@ function mapApiToDestination(d: ApiDestination): Destination {
     name: d.name || 'Unknown destination',
     description,
     imageUrl,
-    category: tagsArray,
-    // Until you add structured travel type info in the DB, keep these generic
+    category,
     travelType: ['solo', 'group', 'family'],
     rating: 4.8,
     duration: d.average_visit_duration || 'Half day',
@@ -53,43 +48,33 @@ function mapApiToDestination(d: ApiDestination): Destination {
 }
 
 export function useDestinations() {
-  const [destinations, setDestinations] = useState<Destination[]>(allDestinations);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
-    const fetchDestinations = async () => {
+    async function fetchDestinations() {
       try {
-        const response = await axios.get<ApiDestination[]>('http://127.0.0.1:8080/destinations/', {
-          headers: { accept: 'application/json' },
-        });
+        const { data } = await axios.get<ApiDestination[]>(
+          'http://127.0.0.1:8080/destinations/',
+          { signal: controller.signal }
+        );
 
-        if (cancelled) return;
-
-        const mapped = response.data.map(mapApiToDestination);
-        setDestinations(mapped);
-        setError(null);
+        setDestinations(data.map(mapApiToDestination));
       } catch (err: any) {
-        if (cancelled) return;
-        console.error('Failed to fetch destinations from API:', err.response?.data || err.message);
-        // Keep static allDestinations as a fallback
-        setError(err.message ?? 'Failed to load destinations');
+        console.error('Fetch failed:', err.message);
+        setDestinations(allDestinations); // fallback only
+        setError('Using offline data');
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
-    };
+    }
 
     fetchDestinations();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, []);
 
   return { destinations, loading, error };
 }
-
