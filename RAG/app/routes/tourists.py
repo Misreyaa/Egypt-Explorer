@@ -61,6 +61,7 @@ async def match_destinations(
     }).to_list(length=50)
     return matched
 
+
 @router.get("/{email}/match_locals")
 async def match_locals(
     email: str,
@@ -72,10 +73,29 @@ async def match_locals(
     tourist = await tourists_collection.find_one({"email": email})
     if not tourist:
         raise HTTPException(status_code=404, detail="Tourist not found")
-    matched = await locals_collection.find({
-        "languages": {"$in": tourist.get("languages", [])}
-    }).to_list(length=50)
-    return matched
+
+    # Get locals that share at least one language or interest (optional, can return all locals)
+    locals_cursor = locals_collection.find()
+    locals_list = await locals_cursor.to_list(length=100)
+
+    # Transform data to match frontend expectation
+    matched_locals = []
+    for local in locals_list:
+        matched_locals.append({
+            "id": str(local.get("_id")),
+            "name": local.get("name"),
+            "age": str(local.get("age")),
+            "city": local.get("city"),
+            "occupation": local.get("occupation"),
+            "bio": local.get("bio"),
+            "avatarUrl": local.get("avatarUrl"),
+            "spoken_languages": local.get("spoken_languages", []),
+            "interests": local.get("interests", []),
+            "rating": local.get("rating", 0),
+            "reviewCount": local.get("reviewCount", 0)
+        })
+    return matched_locals
+
 class WishlistRequest(BaseModel):
     destination_id: str
     email:str
