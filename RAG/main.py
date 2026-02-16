@@ -261,7 +261,7 @@ app.include_router(bias.router, prefix="", tags=["Bias"])
 # Protected Query Endpoint
 # -----------------------------
 @app.post("/query", response_model=QueryResponse)
-async def query_rag(req: QueryRequest, current_user: str = Depends(get_current_user)):
+async def query_rag(req: QueryRequest):
     """
     Query RAG endpoint. Requires authentication.
     """

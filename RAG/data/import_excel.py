@@ -1,9 +1,13 @@
+import os
 import pandas as pd
 from pymongo import MongoClient
 
 # MongoDB connection
-uri = "mongodb+srv://mariamelkondakly88_db_user:VXNPTFlECyywG3F5@cluster0.byznfgr.mongodb.net/?appName=Cluster0"
-
+# MongoDB connection (use MONGODB_URI env var or default to provided Atlas)
+uri = os.getenv(
+	"MONGODB_URI",
+	"mongodb+srv://mennamohamedd2023_db_user:aHt7JuOZJENHs7p8@cluster0.byznfgr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+)
 # Create a new client and connect to the server
 client = MongoClient(uri)
 

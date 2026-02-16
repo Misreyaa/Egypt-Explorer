@@ -12,10 +12,18 @@ from motor.motor_asyncio import AsyncIOMotorClient
 EXCEL_PATH = "data/Locations.xlsx"
 
 # Use env vars, defaulting to cloud MongoDB Atlas cluster
+#   e.g. for Atlas:
+#   MONGODB_URI="mongodb+srv://user:pass@cluster0.byznfgr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+#   MONGODB_DB="egyreal"
+
+EXCEL_PATH = "data/Locations.xlsx"
+
+# Use env vars, defaulting to cloud MongoDB Atlas cluster
 MONGODB_URI = os.getenv(
     "MONGODB_URI",
-    "mongodb+srv://mariamelkondakly88_db_user:VXNPTFlECyywG3F5@cluster0.byznfgr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-)
+    "mongodb+srv://mennamohamedd2023_db_user:aHt7JuOZJENHs7p8@cluster0.byznfgr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    )
+
 MONGODB_DB = os.getenv("MONGODB_DB", "egyreal")
 
 # Async Motor client ("mongo await" style)

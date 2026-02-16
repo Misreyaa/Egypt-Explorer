@@ -67,14 +67,12 @@ export async function login(
 }
 
 export async function askRag(
-  token: string,
   body: QueryRequest,
 ): Promise<QueryResponse> {
   const res = await fetch(`${API_BASE}/query`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(body),
   });

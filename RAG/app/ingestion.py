@@ -45,7 +45,11 @@ def ingest_mongodb(
 
     Returns the number of points upserted.
     """
-    mongodb_uri = mongodb_uri or os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+    mongodb_uri = mongodb_uri or os.getenv(
+        "MONGODB_URI",
+        "mongodb+srv://mennamohamedd2023_db_user:aHt7JuOZJENHs7p8@cluster0.byznfgr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    )
+
     mongodb_db = mongodb_db or os.getenv("MONGODB_DB", "egyreal")
 
     mongo = MongoClient(mongodb_uri)

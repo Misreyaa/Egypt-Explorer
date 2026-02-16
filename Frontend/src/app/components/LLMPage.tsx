@@ -138,7 +138,8 @@ export const LLMPage: React.FC = () => {
       }
 
       // Ask RAG backend
-      const answer = await askRag(currentToken, { query: userMessage.content, limit: 5 });
+      console.log(currentToken)
+      const answer = await askRag({ query: userMessage.content, limit: 5 });
       const assistantMessage: Message = {
         role: 'assistant',
         content: answer.response,
