@@ -2,6 +2,7 @@
 ### 1st Place Winner — Capgemini Hackathon at AI Everything Egypt (Feb 2026)
 
 Egypt Explorer is an AI-powered platform designed to combat online misinformation and bias about Egypt, giving tourists an honest, immersive, and locally-guided experience of the country.
+> 📊 [View the full presentation](https://canva.link/j11yl3o345lznl6)
 
 ---
 
