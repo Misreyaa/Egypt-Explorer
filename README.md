@@ -56,24 +56,6 @@ Built in under 5 days as part of the Capgemini Hackathon at AI Everything Egypt 
 
 ---
 
-## Project Structure
-
-```
-egypt-explorer/
-├── backend/
-│   ├── main.py               # FastAPI entry point
-│   ├── bias_detection/       # Gemini API bias detection logic
-│   ├── chatbot/              # RAG pipeline and LLM integration
-│   └── database/             # MongoDB Atlas connection and models
-├── frontend/
-│   ├── src/
-│   │   ├── tourist/          # Tourist portal pages and components
-│   │   └── local/            # Local portal pages and components
-└── README.md
-```
-
----
-
 ## Getting Started
 
 ### Prerequisites
