@@ -64,7 +64,7 @@ Built in under 5 days as part of the Capgemini Hackathon at AI Everything Egypt 
 - Node.js 18+
 - MongoDB Atlas account
 - Gemini API key
-- OPENAI_API_KEY
+- OpenAI API key
 
 ### Backend Setup
 ```bash
