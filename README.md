@@ -44,7 +44,7 @@ A full roadmap platform that guides tourists through discovering the real Egypt 
 | Frontend | React, Figma Make |
 | Backend | FastAPI |
 | Database | MongoDB Atlas |
-| AI / LLM | Gemini API, RAG pipeline |
+| AI / LLM | Gemini API, RAG pipeline & GPT-4o min, Bias Auditor|
 | Prototyping | Google Colab |
 
 ---
