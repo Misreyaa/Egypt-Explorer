@@ -15,6 +15,7 @@
 # Environment files
 /Frontend/node_modules/
 /RAG/app/__pycache__/
+/Rag/environment.py
 
 # Angular CLI and build artefacts
 /.angular-cli.json
