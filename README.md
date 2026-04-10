@@ -67,7 +67,7 @@ Built in under 5 days as part of the Capgemini Hackathon at AI Everything Egypt 
 
 ### Backend Setup
 ```bash
-cd backend
+cd RAG
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
