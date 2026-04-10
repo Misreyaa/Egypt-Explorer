@@ -22,7 +22,7 @@ A full roadmap platform that guides tourists through discovering the real Egypt 
 
 ### 🔍 AI Bias Detection Tool
 - Accepts a screenshot or pasted text from any online comment or review
-- Powered by the Gemini API to detect emotional bias patterns such as stereotyping, overgeneralization, and cultural prejudice
+- Powered by the GPT 4.0 mini API to detect emotional bias patterns such as stereotyping, overgeneralization, and cultural prejudice
 - Generates a heatmap visualizing the percentage of bias detected per segment
 - Provides a reframed, balanced perspective on the original comment
 
